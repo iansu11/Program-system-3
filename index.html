@@ -802,20 +802,38 @@
         }
     }
 
-    // V59: 動靜分離的存檔邏輯
+    // V59: 動靜分離的存檔邏輯 (已完美修復預設模板存檔衝突)
     async function saveToLocal() { 
-        // 1. 抽取輕量動態資料
         let progressToSave = {};
         if (db && db.problems) {
             db.problems.forEach(p => {
-                // 只有修改過程式碼才需要存檔
-                if (p.code_cpp || p.code_python || p.lastLang || p.modelAnswer) {
-                    progressToSave[p.id] = {
-                        code_cpp: p.code_cpp,
-                        code_python: p.code_python,
-                        lastLang: p.lastLang,
-                        modelAnswer: p.modelAnswer
-                    };
+                let shouldSave = false;
+                let sp = {};
+                
+                // 取得標準模板 (去除多餘空白以防誤判)
+                const tplCpp = p.tpl_cpp !== undefined ? p.tpl_cpp : (p.templateCode !== undefined ? p.templateCode : defaultTemplates.cpp);
+                const tplPy = p.tpl_python !== undefined ? p.tpl_python : defaultTemplates.python;
+
+                // 只有當使用者修改的程式碼「不同於」預設模板時，才存進 Firebase
+                const currentCpp = p.code_cpp !== undefined ? p.code_cpp.trim() : "";
+                const baseCpp = tplCpp.trim();
+                if (p.code_cpp !== undefined && currentCpp !== baseCpp) {
+                    sp.code_cpp = p.code_cpp;
+                    shouldSave = true;
+                }
+
+                const currentPy = p.code_python !== undefined ? p.code_python.trim() : "";
+                const basePy = tplPy.trim();
+                if (p.code_python !== undefined && currentPy !== basePy) {
+                    sp.code_python = p.code_python;
+                    shouldSave = true;
+                }
+                
+                if (p.lastLang) { sp.lastLang = p.lastLang; shouldSave = true; }
+                if (p.modelAnswer) { sp.modelAnswer = p.modelAnswer; shouldSave = true; }
+
+                if (shouldSave) {
+                    progressToSave[p.id] = sp;
                 }
             });
         }
@@ -1030,20 +1048,22 @@
         const p = db.problems.find(x => x.id === id);
         if (!p) return;
         
-        if (p.tpl_cpp === undefined) p.tpl_cpp = p.templateCode || defaultTemplates.cpp;
+        // 精準取得正確的預設模板
+        if (p.tpl_cpp === undefined) p.tpl_cpp = p.templateCode !== undefined ? p.templateCode : defaultTemplates.cpp;
         if (p.tpl_python === undefined) p.tpl_python = defaultTemplates.python;
         
         if (!fromAdmin) { 
-            p.code_cpp = p.code_cpp || p.tpl_cpp; 
-            p.code_python = p.code_python || p.tpl_python; 
+            // 如果使用者真的沒碰過程式碼 (undefined or null)，才套用預設模板
+            if (p.code_cpp === undefined || p.code_cpp === null) p.code_cpp = p.tpl_cpp;
+            if (p.code_python === undefined || p.code_python === null) p.code_python = p.tpl_python;
         } 
         
         document.getElementById('wsTitle').innerText = p.title;
         document.getElementById('wsDesc').innerHTML = parseContent(p.desc || "");
         const lang = p.lastLang || 'cpp'; document.getElementById('langSelect').value = lang; 
         
-        if (lang === 'cpp') { editor.session.setMode("ace/mode/c_cpp"); editor.setValue(p.code_cpp, -1); } 
-        else if (lang === 'python') { editor.session.setMode("ace/mode/python"); editor.setValue(p.code_python, -1); }
+        if (lang === 'cpp') { editor.session.setMode("ace/mode/c_cpp"); editor.setValue(p.code_cpp || "", -1); } 
+        else if (lang === 'python') { editor.session.setMode("ace/mode/python"); editor.setValue(p.code_python || "", -1); }
         
         document.getElementById('outputLogs').innerHTML = '<div style="color:#666;">等待執行...</div>';
         showView('view-workspace');
@@ -1061,9 +1081,13 @@
     function _goToAdminInternal() {
         const p = db.problems.find(x => x.id === currentProbId); 
         document.getElementById('editTitle').value = p.title; document.getElementById('editDesc').value = p.desc; 
-        adminTempTemplates.cpp = p.tpl_cpp || p.templateCode || defaultTemplates.cpp; adminTempTemplates.python = p.tpl_python || defaultTemplates.python;
+        
+        adminTempTemplates.cpp = p.tpl_cpp !== undefined ? p.tpl_cpp : (p.templateCode !== undefined ? p.templateCode : defaultTemplates.cpp);
+        adminTempTemplates.python = p.tpl_python !== undefined ? p.tpl_python : defaultTemplates.python;
+        
         document.getElementById('adminLangSelect').value = 'cpp'; currentAdminLang = 'cpp';
         document.getElementById('editTemplate').value = adminTempTemplates.cpp;
+        
         const c = document.getElementById('adminTestCases'); c.innerHTML = ''; 
         (p.testCases || []).forEach(tc => addTestCaseUI(tc.input, tc.output)); 
         setTimeout(() => { document.querySelectorAll('#adminTestCases textarea').forEach(ta => autoResize(ta)); }, 0);
@@ -1180,8 +1204,8 @@
         const newLang = document.getElementById('langSelect').value; 
         p.lastLang = newLang; 
         
-        if (newLang === 'cpp') { editor.session.setMode("ace/mode/c_cpp"); editor.setValue(p.code_cpp, -1); } 
-        else if (newLang === 'python') { editor.session.setMode("ace/mode/python"); editor.setValue(p.code_python, -1); }
+        if (newLang === 'cpp') { editor.session.setMode("ace/mode/c_cpp"); editor.setValue(p.code_cpp || "", -1); } 
+        else if (newLang === 'python') { editor.session.setMode("ace/mode/python"); editor.setValue(p.code_python || "", -1); }
     }
 
     function toggleCompileMode() {
@@ -1198,8 +1222,9 @@
     function resetCode() { 
         if(!confirm("重置程式碼到初始模板？")) return; 
         const p = db.problems.find(x => x.id === currentProbId); const lang = document.getElementById('langSelect').value;
-        if (lang === 'cpp') { p.code_cpp = p.tpl_cpp || defaultTemplates.cpp; editor.setValue(p.code_cpp, -1); } 
-        else { p.code_python = p.tpl_python || defaultTemplates.python; editor.setValue(p.code_python, -1); }
+        if (lang === 'cpp') { p.code_cpp = p.tpl_cpp !== undefined ? p.tpl_cpp : p.templateCode; editor.setValue(p.code_cpp || "", -1); } 
+        else { p.code_python = p.tpl_python; editor.setValue(p.code_python || "", -1); }
+        saveToLocal(); // 強制存檔覆寫
     }
     
     function adjustFontSize(change) { currentFontSize += change; if (currentFontSize < 10) currentFontSize = 10; if (currentFontSize > 30) currentFontSize = 30; editor.setFontSize(currentFontSize); }
