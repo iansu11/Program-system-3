@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>解題系統 V58 (自動更新偵測版)</title>
+    <title>解題系統 V59 (輕量儲存與自動更新版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ace.js"></script>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
@@ -154,7 +154,7 @@
         }
         .page-header h2 { color: #111827; }
 
-        /* === Views 3-6 (保持原本佈局) === */
+        /* === Views 3-6 === */
         #view-categories { padding: 40px; max-width: 1400px; margin: 0 auto; width: 100%; overflow-y: auto; display: none; }
         .cat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 25px; }
         @media (max-width: 1100px) { .cat-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -250,7 +250,7 @@
         .hist-item:hover { background: #2a2a2a; }
         .hist-item.active { border-left: 3px solid var(--accent); background: #222; }
 
-        /* === V58 新增：更新提示浮窗 === */
+        /* === V59 更新提示浮窗 === */
         #updateToast {
             display: none; 
             position: fixed; 
@@ -301,7 +301,7 @@
         </div>
 
         <h2 style="font-size: 2rem; margin-bottom: 10px; margin-top: 0; letter-spacing: 1px;">請選擇題庫</h2>
-        <p style="color: #a7f3d0; margin-bottom: 30px;">🟢 雲端同步已開啟，執行紀錄將永久保存於您的帳號</p>
+        <p style="color: #a7f3d0; margin-bottom: 30px;">🟢 雲端同步已開啟，動態紀錄將永久保存於您的帳號</p>
         
         <div class="portal-grid">
             <button class="bank-btn" onclick="fetchAndLoadBank('program-1.json', '📚 114-第一學期程式設計')">
@@ -453,7 +453,7 @@
 
 <div id="backupModal" class="modal">
     <div class="modal-box" style="width:500px;">
-        <h3>📦 資料備份/還原 (V58 雲端版)</h3>
+        <h3>📦 資料備份/還原 (V59 雲端版)</h3>
         <textarea id="backupStr" style="width:100%; height:100px; margin-bottom:10px;" placeholder="Backup Code (Base64)..."></textarea>
         
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-bottom:15px;">
@@ -531,9 +531,9 @@
     let db = { categories: [], problems: [], version: "" };
     let executionHistories = {}; 
     let currentBankName = ""; 
-    let currentBankUrl = "";  // V58 新增：記錄目前的 JSON 來源網址以供檢查更新
+    let currentBankUrl = "";  
     let currentView = 'view-login';
-    let pendingUpdateDb = null; // 暫存從 GitHub 抓到的新題庫
+    let pendingUpdateDb = null; 
 
     const localData = localStorage.getItem('oj_v15_data');
     if (localData) { try { db = JSON.parse(localData); } catch(e){} }
@@ -616,11 +616,10 @@
             currentUser = user;
             document.getElementById('user-name').innerText = user.email;
             
-            // 效能優化 1：如果是直接進入題目 (有 probId)，且本地已存有快取，先利用本地資料快速渲染畫面，再於背景同步雲端資料。
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('probId') && db && db.problems && db.problems.length > 0) {
                 checkUrlAndLoad(); 
-                loadUserDataFromCloud(true); // 帶入 true 表示這是背景執行
+                loadUserDataFromCloud(true); 
             } else {
                 await loadUserDataFromCloud(false); 
             }
@@ -631,7 +630,7 @@
     });
 
     // ==========================================
-    // 3. 雲端資料同步 & V58自動更新機制
+    // 3. 雲端資料同步 & V59 自動補齊機制
     // ==========================================
     async function loadUserDataFromCloud(isBackground = false) {
         if (!currentUser) return;
@@ -642,9 +641,9 @@
             if (docSnap.exists) {
                 const data = docSnap.data();
                 
+                // 雲端資料現在是輕量版 (不含靜態題目敘述等)
                 if (data.dbData) {
                     db = JSON.parse(data.dbData);
-                    localStorage.setItem('oj_v15_data', data.dbData); 
                 }
                 if (data.historyData) {
                     executionHistories = JSON.parse(data.historyData);
@@ -661,6 +660,38 @@
                     currentBankUrl = data.bankUrl;
                     localStorage.setItem('oj_v15_bank_url', data.bankUrl);
                 }
+
+                // V59: 若有綁定題庫網址，立刻從 GitHub 補齊靜態資料 (題目敘述、測資)
+                if (currentBankUrl && !isBackground) {
+                    try {
+                        const res = await fetch(currentBankUrl + '?t=' + new Date().getTime());
+                        if (res.ok) {
+                            const bankDb = await res.json();
+                            bankDb.problems.forEach(bankP => {
+                                let localP = db.problems.find(p => p.id === bankP.id);
+                                if (localP) {
+                                    // 將 GitHub 上的靜態資料合併回使用者的記錄中
+                                    localP.desc = bankP.desc;
+                                    localP.testCases = bankP.testCases;
+                                    localP.tpl_cpp = bankP.tpl_cpp;
+                                    localP.tpl_python = bankP.tpl_python;
+                                    localP.title = bankP.title;
+                                } else {
+                                    // 如果題庫有新增題目，順便加進來
+                                    db.problems.push(bankP);
+                                }
+                            });
+                            db.categories = bankDb.categories;
+                            db.version = bankDb.version || db.version;
+                        }
+                    } catch(e) {
+                        console.error("無法同步題庫靜態資料", e);
+                    }
+                }
+                
+                // 補齊後完整存入本地端，讓使用者介面順暢運作
+                localStorage.setItem('oj_v15_data', JSON.stringify(db));
+
             } else {
                 if (!isBackground) {
                     db = { categories: [], problems: [], version: "" };
@@ -670,12 +701,10 @@
                 }
             }
             
-            // 如果不是背景執行，載入完畢後刷新畫面
             if (!isBackground) {
                 checkUrlAndLoad();
             }
 
-            // V58: 載入完畢後，偷偷去檢查 GitHub 有沒有新版本
             checkForUpdates();
 
         } catch (e) { 
@@ -687,14 +716,12 @@
         }
     }
 
-    // === V58 核心：檢查並套用更新 ===
     async function checkForUpdates() {
         if (!currentBankUrl) return; 
         try {
             const res = await fetch(currentBankUrl + '?t=' + new Date().getTime());
             if (res.ok) {
                 const newDb = await res.json();
-                // 若新版有 version 標籤，且跟本地的不一樣，就跳出更新提示
                 if (newDb.version && newDb.version !== db.version) {
                     pendingUpdateDb = newDb;
                     const toast = document.getElementById('updateToast');
@@ -708,7 +735,6 @@
         if (!pendingUpdateDb) return;
         const newDb = pendingUpdateDb;
         
-        // 無損合併：保留學生的程式碼與編輯狀態
         if (db && db.problems) {
             newDb.problems.forEach(newP => {
                 const oldP = db.problems.find(p => p.id === newP.id);
@@ -728,7 +754,6 @@
         pendingUpdateDb = null;
         alert("✅ 題庫已成功同步至最新版本！\n您的作答紀錄皆已安全保留。");
         
-        // 刷新目前畫面
         if (currentView === 'view-categories') renderCategoryList();
         if (currentView === 'view-problem-list') renderProblemList();
         if (currentView === 'view-workspace') _enterWorkspaceInternal(currentProbId, true);
@@ -758,18 +783,36 @@
         }
     }
 
+    // === V59 核心修改：Firebase 儲存輕量化 ===
     async function saveToLocal() { 
         const dataString = JSON.stringify(db);
         const historyString = JSON.stringify(executionHistories);
         
+        // LocalStorage 保留完整資料，確保離線與載入速度
         localStorage.setItem('oj_v15_data', dataString); 
         localStorage.setItem('oj_v15_history', historyString);
         
         if (currentUser) {
             try {
+                // 建構輕量化版本的 DB 傳送給 Firebase
+                const cloudDb = JSON.parse(dataString);
+                cloudDb.problems.forEach(p => {
+                    // 根據需求：剔除原本就存在 Github 上的靜態資料，以節省雲端空間。
+                    // 若是使用者自行新增的題目 (ID 為13碼時間戳)，則保留完整資料。
+                    const isCustomProblem = /^\d{13}$/.test(p.id);
+                    if (!isCustomProblem) {
+                        delete p.desc;
+                        delete p.testCases;
+                        delete p.tpl_cpp;
+                        delete p.tpl_python;
+                    }
+                });
+                
+                const lightweightDataString = JSON.stringify(cloudDb);
+
                 await firestore.collection('users').doc(currentUser.uid).set({
-                    dbData: dataString,
-                    historyData: historyString,
+                    dbData: lightweightDataString, // 存入輕量版資料
+                    historyData: historyString,    // 存入執行紀錄
                     bankName: currentBankName,
                     bankUrl: currentBankUrl,
                     lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
@@ -853,7 +896,7 @@
                             if (oldP.modelAnswer !== undefined) newP.modelAnswer = oldP.modelAnswer;
                         }
                     });
-                    newDb.version = newDb.version || db.version; // 繼承或更新版本號
+                    newDb.version = newDb.version || db.version;
                 }
                 
                 db = newDb;
@@ -1069,7 +1112,7 @@
 
                 item.innerHTML = `
                     <div style="flex:1; overflow:hidden;">
-                        <div class="prob-title">${p.title}</div><div class="prob-desc-preview">${p.desc.substring(0, 50)}...</div>
+                        <div class="prob-title">${p.title}</div><div class="prob-desc-preview">${p.desc ? p.desc.substring(0, 50) : "無敘述"}...</div>
                     </div>
                     <div class="prob-actions">
                         <button class="prob-btn-icon prob-edit-btn" onclick="editProblemInList(event, '${p.id}')" title="修改題目">✏️</button>
@@ -1146,7 +1189,6 @@
         adminTempTemplates[currentAdminLang] = currentText; currentAdminLang = newLang; document.getElementById('editTemplate').value = adminTempTemplates[newLang];
     }
 
-    // 效能優化 2：移除 async/await，將雲端儲存切換為背景任務，讓畫面立即切換。
     function saveAdminAndBack() { 
         const p = db.problems.find(x => x.id === currentProbId); 
         p.title = document.getElementById('editTitle').value; p.desc = document.getElementById('editDesc').value; 
@@ -1155,8 +1197,8 @@
         const inputs = document.querySelectorAll('.tc-input'); const outputs = document.querySelectorAll('.tc-output'); 
         p.testCases = []; for(let i=0; i<inputs.length; i++) p.testCases.push({ input: inputs[i].value, output: outputs[i].value }); 
         
-        saveToLocal(); // 背景執行，不再卡住畫面
-        history.back(); // 直接退回工作區
+        saveToLocal(); 
+        history.back(); 
     }
     
     function insertImageToDesc() { const url = prompt("請輸入圖片網址 (URL)：", "https://"); if (url) { const descArea = document.getElementById('editDesc'); descArea.value += `\n\n![圖片](${url})\n\n`; descArea.focus(); } }
@@ -1268,14 +1310,17 @@
         document.getElementById('historyModal').style.display = 'flex';
     }
 
+    // === V59 修改：徹底清空執行紀錄 ===
     function clearProblemHistory() {
         if (!confirm("確定要清空這題的所有歷史執行紀錄嗎？此動作無法復原。")) return;
         
-        // 使用 delete 完全移除該題目的鍵值，而不只是變成空陣列
+        // 使用 delete 徹底移除該鍵值，字串化存檔後便會直接釋放空間
         delete executionHistories[currentProbId]; 
         
-        // 執行存檔，並在存檔完成後重新渲染畫面
-        saveToLocal().then(() => openHistoryModal());
+        saveToLocal().then(() => {
+            alert("✅ 該題執行紀錄已清空並同步至雲端！");
+            openHistoryModal();
+        });
     }
 
     function openAIHelperModal() {
