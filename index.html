@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>解題系統 V59 (輕量化雲端存檔版)</title>
+    <title>解題系統 V58 (自動更新偵測版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ace.js"></script>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
@@ -154,7 +154,7 @@
         }
         .page-header h2 { color: #111827; }
 
-        /* === Views 3-6 === */
+        /* === Views 3-6 (保持原本佈局) === */
         #view-categories { padding: 40px; max-width: 1400px; margin: 0 auto; width: 100%; overflow-y: auto; display: none; }
         .cat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 25px; }
         @media (max-width: 1100px) { .cat-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -250,6 +250,7 @@
         .hist-item:hover { background: #2a2a2a; }
         .hist-item.active { border-left: 3px solid var(--accent); background: #222; }
 
+        /* === V58 新增：更新提示浮窗 === */
         #updateToast {
             display: none; 
             position: fixed; 
@@ -300,7 +301,7 @@
         </div>
 
         <h2 style="font-size: 2rem; margin-bottom: 10px; margin-top: 0; letter-spacing: 1px;">請選擇題庫</h2>
-        <p style="color: #a7f3d0; margin-bottom: 30px;">🟢 輕量雲端存檔已開啟，程式碼與紀錄將自動保存</p>
+        <p style="color: #a7f3d0; margin-bottom: 30px;">🟢 雲端同步已開啟，執行紀錄將永久保存於您的帳號</p>
         
         <div class="portal-grid">
             <button class="bank-btn" onclick="fetchAndLoadBank('program-1.json', '📚 114-第一學期程式設計')">
@@ -452,7 +453,7 @@
 
 <div id="backupModal" class="modal">
     <div class="modal-box" style="width:500px;">
-        <h3>📦 資料備份/還原 (V59 雲端版)</h3>
+        <h3>📦 資料備份/還原 (V58 雲端版)</h3>
         <textarea id="backupStr" style="width:100%; height:100px; margin-bottom:10px;" placeholder="Backup Code (Base64)..."></textarea>
         
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-bottom:15px;">
@@ -525,30 +526,25 @@
 
 <script>
     // =========================================================
-    // 0. Eager Load (預先載入) & 變數宣告 (V59 更新)
+    // 0. Eager Load (預先載入) & 變數宣告
     // =========================================================
     let db = { categories: [], problems: [], version: "" };
     let executionHistories = {}; 
-    let userProgress = {}; // V59 新增：只存放使用者改動的動態資料 { probId: { code_cpp, code_python, lastLang, modelAnswer } }
     let currentBankName = ""; 
-    let currentBankUrl = "";  
+    let currentBankUrl = "";  // V58 新增：記錄目前的 JSON 來源網址以供檢查更新
     let currentView = 'view-login';
-    let pendingUpdateDb = null;
+    let pendingUpdateDb = null; // 暫存從 GitHub 抓到的新題庫
 
-    // V59: 本機儲存改用 oj_v59_ 系列前綴，避免與舊版打架
-    const localCachedDb = localStorage.getItem('oj_v59_cached_db');
-    if (localCachedDb) { try { db = JSON.parse(localCachedDb); } catch(e){} }
+    const localData = localStorage.getItem('oj_v15_data');
+    if (localData) { try { db = JSON.parse(localData); } catch(e){} }
     
-    const localProgress = localStorage.getItem('oj_v59_progress');
-    if (localProgress) { try { userProgress = JSON.parse(localProgress); } catch(e){} }
-
-    const localHistory = localStorage.getItem('oj_v59_history');
+    const localHistory = localStorage.getItem('oj_v15_history');
     if (localHistory) { try { executionHistories = JSON.parse(localHistory); } catch(e){} }
     
-    const localBankName = localStorage.getItem('oj_v59_bank_name');
+    const localBankName = localStorage.getItem('oj_v15_bank_name');
     if (localBankName) currentBankName = localBankName;
 
-    const localBankUrl = localStorage.getItem('oj_v59_bank_url');
+    const localBankUrl = localStorage.getItem('oj_v15_bank_url');
     if (localBankUrl) currentBankUrl = localBankUrl;
 
     // ==========================================
@@ -606,15 +602,10 @@
     function logout() {
         if(confirm("確定要登出嗎？")) {
             auth.signOut().then(() => {
-                localStorage.removeItem('oj_v59_cached_db');
-                localStorage.removeItem('oj_v59_progress');
-                localStorage.removeItem('oj_v59_history');
-                localStorage.removeItem('oj_v59_bank_name');
-                localStorage.removeItem('oj_v59_bank_url');
-                
-                // 清除可能殘留的舊版快取
                 localStorage.removeItem('oj_v15_data');
                 localStorage.removeItem('oj_v15_history');
+                localStorage.removeItem('oj_v15_bank_name');
+                localStorage.removeItem('oj_v15_bank_url');
                 window.location.href = window.location.href.split('?')[0]; 
             });
         }
@@ -625,10 +616,11 @@
             currentUser = user;
             document.getElementById('user-name').innerText = user.email;
             
+            // 效能優化 1：如果是直接進入題目 (有 probId)，且本地已存有快取，先利用本地資料快速渲染畫面，再於背景同步雲端資料。
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('probId') && db && db.problems && db.problems.length > 0) {
                 checkUrlAndLoad(); 
-                loadUserDataFromCloud(true); 
+                loadUserDataFromCloud(true); // 帶入 true 表示這是背景執行
             } else {
                 await loadUserDataFromCloud(false); 
             }
@@ -639,7 +631,7 @@
     });
 
     // ==========================================
-    // 3. 雲端資料同步 & V59 動靜分離載入機制
+    // 3. 雲端資料同步 & V58自動更新機制
     // ==========================================
     async function loadUserDataFromCloud(isBackground = false) {
         if (!currentUser) return;
@@ -647,70 +639,43 @@
             const docRef = firestore.collection('users').doc(currentUser.uid);
             const docSnap = await docRef.get();
             
-            let progressData = null;
-
             if (docSnap.exists) {
                 const data = docSnap.data();
                 
-                // V59: 讀取輕量化作答紀錄
-                if (data.userProgress) {
-                    progressData = JSON.parse(data.userProgress);
-                    localStorage.setItem('oj_v59_progress', data.userProgress);
-                } 
-                // V59: 舊版資料無痛遷移機制
-                else if (data.dbData) {
-                    const oldDb = JSON.parse(data.dbData);
-                    progressData = {};
-                    if(oldDb && oldDb.problems) {
-                        oldDb.problems.forEach(p => {
-                            if (p.code_cpp || p.code_python || p.lastLang || p.modelAnswer) {
-                                progressData[p.id] = { code_cpp: p.code_cpp, code_python: p.code_python, lastLang: p.lastLang, modelAnswer: p.modelAnswer };
-                            }
-                        });
-                    }
-                    userProgress = progressData;
-                    // 在背景執行瘦身：刪除舊資料，只存入輕量資料
-                    setTimeout(() => migrateOldFirebaseData(), 2000); 
+                if (data.dbData) {
+                    db = JSON.parse(data.dbData);
+                    localStorage.setItem('oj_v15_data', data.dbData); 
                 }
-
                 if (data.historyData) {
                     executionHistories = JSON.parse(data.historyData);
-                    localStorage.setItem('oj_v59_history', data.historyData);
+                    localStorage.setItem('oj_v15_history', data.historyData);
                 }
                 if (data.bankName) {
                     currentBankName = data.bankName;
-                    localStorage.setItem('oj_v59_bank_name', data.bankName);
-                    if(document.getElementById('currentBankName')) document.getElementById('currentBankName').innerText = "📂 目前題庫: " + data.bankName;
+                    localStorage.setItem('oj_v15_bank_name', data.bankName);
+                    if(document.getElementById('currentBankName')) {
+                        document.getElementById('currentBankName').innerText = "📂 目前題庫: " + data.bankName;
+                    }
                 }
                 if (data.bankUrl) {
                     currentBankUrl = data.bankUrl;
-                    localStorage.setItem('oj_v59_bank_url', data.bankUrl);
+                    localStorage.setItem('oj_v15_bank_url', data.bankUrl);
+                }
+            } else {
+                if (!isBackground) {
+                    db = { categories: [], problems: [], version: "" };
+                    executionHistories = {};
+                    currentBankName = "";
+                    currentBankUrl = "";
                 }
             }
             
-            userProgress = progressData || {};
-
-            // 確保目前的快取 db 也有帶入學生的程式碼
-            if (db && db.problems) {
-                db.problems.forEach(p => {
-                    const sp = userProgress[p.id];
-                    if (sp) {
-                        if (sp.code_cpp !== undefined) p.code_cpp = sp.code_cpp;
-                        if (sp.code_python !== undefined) p.code_python = sp.code_python;
-                        if (sp.lastLang !== undefined) p.lastLang = sp.lastLang;
-                        if (sp.modelAnswer !== undefined) p.modelAnswer = sp.modelAnswer;
-                    }
-                });
-            }
-
+            // 如果不是背景執行，載入完畢後刷新畫面
             if (!isBackground) {
-                // 如果是重新登入且有紀錄題庫來源，重新從網路拉取最新的靜態資料，並注入程式碼
-                if (currentBankUrl) {
-                    await fetchAndLoadBank(currentBankUrl, currentBankName, false, true); // true 表示不要在此處觸發 saveToLocal 浪費資源
-                }
                 checkUrlAndLoad();
             }
 
+            // V58: 載入完畢後，偷偷去檢查 GitHub 有沒有新版本
             checkForUpdates();
 
         } catch (e) { 
@@ -722,24 +687,14 @@
         }
     }
 
-    // V59: 將舊版佔空間的 dbData 刪除，轉換成輕量的 userProgress
-    async function migrateOldFirebaseData() {
-        if (!currentUser) return;
-        try {
-            await firestore.collection('users').doc(currentUser.uid).update({
-                dbData: firebase.firestore.FieldValue.delete(),
-                userProgress: JSON.stringify(userProgress)
-            });
-            console.log("✅ V59 雲端瘦身完成：已將舊版 dbData 轉移並清除。");
-        } catch(e) {}
-    }
-
+    // === V58 核心：檢查並套用更新 ===
     async function checkForUpdates() {
         if (!currentBankUrl) return; 
         try {
             const res = await fetch(currentBankUrl + '?t=' + new Date().getTime());
             if (res.ok) {
                 const newDb = await res.json();
+                // 若新版有 version 標籤，且跟本地的不一樣，就跳出更新提示
                 if (newDb.version && newDb.version !== db.version) {
                     pendingUpdateDb = newDb;
                     const toast = document.getElementById('updateToast');
@@ -753,15 +708,15 @@
         if (!pendingUpdateDb) return;
         const newDb = pendingUpdateDb;
         
-        // 無損合併：將動態的 userProgress 注入新題庫
-        if (newDb.problems) {
+        // 無損合併：保留學生的程式碼與編輯狀態
+        if (db && db.problems) {
             newDb.problems.forEach(newP => {
-                const sp = userProgress[newP.id];
-                if (sp) {
-                    if (sp.code_cpp !== undefined) newP.code_cpp = sp.code_cpp;
-                    if (sp.code_python !== undefined) newP.code_python = sp.code_python;
-                    if (sp.lastLang !== undefined) newP.lastLang = sp.lastLang;
-                    if (sp.modelAnswer !== undefined) newP.modelAnswer = sp.modelAnswer;
+                const oldP = db.problems.find(p => p.id === newP.id);
+                if (oldP) {
+                    if (oldP.code_cpp !== undefined) newP.code_cpp = oldP.code_cpp;
+                    if (oldP.code_python !== undefined) newP.code_python = oldP.code_python;
+                    if (oldP.lastLang !== undefined) newP.lastLang = oldP.lastLang;
+                    if (oldP.modelAnswer !== undefined) newP.modelAnswer = oldP.modelAnswer;
                 }
             });
         }
@@ -773,6 +728,7 @@
         pendingUpdateDb = null;
         alert("✅ 題庫已成功同步至最新版本！\n您的作答紀錄皆已安全保留。");
         
+        // 刷新目前畫面
         if (currentView === 'view-categories') renderCategoryList();
         if (currentView === 'view-problem-list') renderProblemList();
         if (currentView === 'view-workspace') _enterWorkspaceInternal(currentProbId, true);
@@ -802,39 +758,17 @@
         }
     }
 
-    // V59: 動靜分離的存檔邏輯
     async function saveToLocal() { 
-        // 1. 抽取輕量動態資料
-        let progressToSave = {};
-        if (db && db.problems) {
-            db.problems.forEach(p => {
-                // 只有修改過程式碼才需要存檔
-                if (p.code_cpp || p.code_python || p.lastLang || p.modelAnswer) {
-                    progressToSave[p.id] = {
-                        code_cpp: p.code_cpp,
-                        code_python: p.code_python,
-                        lastLang: p.lastLang,
-                        modelAnswer: p.modelAnswer
-                    };
-                }
-            });
-        }
-        userProgress = progressToSave;
-
-        const progressString = JSON.stringify(progressToSave);
+        const dataString = JSON.stringify(db);
         const historyString = JSON.stringify(executionHistories);
-        const fullCachedDbString = JSON.stringify(db); // 完整版只留在本機
         
-        // 2. 本機快取 (確保重新整理時秒載入，且自訂題目也能保存在本機)
-        localStorage.setItem('oj_v59_progress', progressString);
-        localStorage.setItem('oj_v59_history', historyString);
-        localStorage.setItem('oj_v59_cached_db', fullCachedDbString);
+        localStorage.setItem('oj_v15_data', dataString); 
+        localStorage.setItem('oj_v15_history', historyString);
         
-        // 3. 雲端存檔 (極致輕量化，不再上傳題目敘述與測資)
         if (currentUser) {
             try {
                 await firestore.collection('users').doc(currentUser.uid).set({
-                    userProgress: progressString,
+                    dbData: dataString,
                     historyData: historyString,
                     bankName: currentBankName,
                     bankUrl: currentBankUrl,
@@ -842,6 +776,7 @@
                 }, { merge: true });
             } catch(e) { 
                 console.error("雲端同步失敗：", e); 
+                alert("⚠️ 雲端存檔失敗！您的進度目前只存在瀏覽器中。請確認 Firebase 規則。");
             }
         }
     }
@@ -898,7 +833,7 @@
         else if (goingTo === 'admin') { currentProbId = state.probId; _goToAdminInternal(); }
     }
 
-    async function fetchAndLoadBank(jsonUrl, displayName, forceReset = false, skipSave = false) {
+    async function fetchAndLoadBank(jsonUrl, displayName, forceReset = false) {
         if(!currentUser) { alert("請先登入帳號！"); return; }
         
         try {
@@ -908,29 +843,28 @@
             if (response.ok) {
                 const newDb = await response.json();
                 
-                // V59: 將學生的程式碼 (userProgress) 注入剛剛下載的乾淨題庫中
-                if (!forceReset && userProgress) {
+                if (!forceReset && db && db.problems) {
                     newDb.problems.forEach(newP => {
-                        const sp = userProgress[newP.id];
-                        if (sp) {
-                            if (sp.code_cpp !== undefined) newP.code_cpp = sp.code_cpp;
-                            if (sp.code_python !== undefined) newP.code_python = sp.code_python;
-                            if (sp.lastLang !== undefined) newP.lastLang = sp.lastLang;
-                            if (sp.modelAnswer !== undefined) newP.modelAnswer = sp.modelAnswer;
+                        const oldP = db.problems.find(p => p.id === newP.id);
+                        if (oldP) {
+                            if (oldP.code_cpp !== undefined) newP.code_cpp = oldP.code_cpp;
+                            if (oldP.code_python !== undefined) newP.code_python = oldP.code_python;
+                            if (oldP.lastLang !== undefined) newP.lastLang = oldP.lastLang;
+                            if (oldP.modelAnswer !== undefined) newP.modelAnswer = oldP.modelAnswer;
                         }
                     });
-                    newDb.version = newDb.version || (db ? db.version : "");
+                    newDb.version = newDb.version || db.version; // 繼承或更新版本號
                 }
                 
                 db = newDb;
                 currentBankUrl = jsonUrl;
                 currentBankName = displayName || jsonUrl;
                 
-                localStorage.setItem('oj_v59_bank_name', currentBankName);
-                localStorage.setItem('oj_v59_bank_url', currentBankUrl);
+                localStorage.setItem('oj_v15_bank_name', currentBankName);
+                localStorage.setItem('oj_v15_bank_url', currentBankUrl);
                 document.getElementById('currentBankName').innerText = "📂 目前題庫: " + currentBankName;
                 
-                if(!skipSave) await saveToLocal(); 
+                await saveToLocal(); 
                 history.pushState({ view: 'categories' }, '', window.location.pathname);
                 renderCategoryList();
                 showView('view-categories');
@@ -953,11 +887,10 @@
     function hardResetAll() {
         if (confirm("⚠️ 警告：這將會清除所有資料，讓系統回到「完全空白」狀態！確定嗎？")) {
             db = { categories: [], problems: [], version: "" };
-            userProgress = {};
             currentBankName = "自訂新題庫 (空白)";
             currentBankUrl = "";
-            localStorage.setItem('oj_v59_bank_name', currentBankName);
-            localStorage.removeItem('oj_v59_bank_url');
+            localStorage.setItem('oj_v15_bank_name', currentBankName);
+            localStorage.removeItem('oj_v15_bank_url');
             saveToLocal();
             document.getElementById('currentBankName').innerText = "📂 " + currentBankName;
             renderCategoryList();
@@ -1034,8 +967,8 @@
         if (p.tpl_python === undefined) p.tpl_python = defaultTemplates.python;
         
         if (!fromAdmin) { 
-            p.code_cpp = p.code_cpp || p.tpl_cpp; 
-            p.code_python = p.code_python || p.tpl_python; 
+            p.code_cpp = p.tpl_cpp; 
+            p.code_python = p.tpl_python; 
         } 
         
         document.getElementById('wsTitle').innerText = p.title;
@@ -1213,6 +1146,7 @@
         adminTempTemplates[currentAdminLang] = currentText; currentAdminLang = newLang; document.getElementById('editTemplate').value = adminTempTemplates[newLang];
     }
 
+    // 效能優化 2：移除 async/await，將雲端儲存切換為背景任務，讓畫面立即切換。
     function saveAdminAndBack() { 
         const p = db.problems.find(x => x.id === currentProbId); 
         p.title = document.getElementById('editTitle').value; p.desc = document.getElementById('editDesc').value; 
@@ -1221,8 +1155,8 @@
         const inputs = document.querySelectorAll('.tc-input'); const outputs = document.querySelectorAll('.tc-output'); 
         p.testCases = []; for(let i=0; i<inputs.length; i++) p.testCases.push({ input: inputs[i].value, output: outputs[i].value }); 
         
-        saveToLocal(); 
-        history.back(); 
+        saveToLocal(); // 背景執行，不再卡住畫面
+        history.back(); // 直接退回工作區
     }
     
     function insertImageToDesc() { const url = prompt("請輸入圖片網址 (URL)：", "https://"); if (url) { const descArea = document.getElementById('editDesc'); descArea.value += `\n\n![圖片](${url})\n\n`; descArea.focus(); } }
@@ -1337,8 +1271,10 @@
     function clearProblemHistory() {
         if (!confirm("確定要清空這題的所有歷史執行紀錄嗎？此動作無法復原。")) return;
         
+        // 使用 delete 完全移除該題目的鍵值，而不只是變成空陣列
         delete executionHistories[currentProbId]; 
         
+        // 執行存檔，並在存檔完成後重新渲染畫面
         saveToLocal().then(() => openHistoryModal());
     }
 
@@ -1358,7 +1294,6 @@
         if(input || output) { const tas = div.querySelectorAll('textarea'); tas.forEach(ta => autoResize(ta)); }
     }
     
-    // V59: 備份功能依然匯出完整本機快取的 db 資料，方便老師下載建置題庫
     function downloadBackup() {
         const date = new Date().toISOString().slice(0, 10); let filename = prompt("請輸入檔案名稱 (無需副檔名):", `oj_backup_${date}`);
         if (!filename) return; if (!filename.endsWith(".txt") && !filename.endsWith(".json")) { filename += ".txt"; }
@@ -1387,7 +1322,7 @@
             if(data.categories && data.problems) { 
                 let defaultName = pendingRestoreFileName || "自訂還原題庫"; let finalName = prompt("請為這個還原的題庫命名：", defaultName);
                 if (finalName === null) return; if (finalName.trim() === "") finalName = "自訂還原題庫";
-                db = data; localStorage.setItem('oj_v59_bank_name', finalName); saveToLocal(); window.location.href = window.location.pathname; 
+                db = data; localStorage.setItem('oj_v15_bank_name', finalName); saveToLocal(); window.location.href = window.location.pathname; 
             } else { throw new Error(); }
         } catch(e) { alert("代碼無效或格式錯誤"); }
     }
