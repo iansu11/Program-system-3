@@ -1270,7 +1270,11 @@
 
     function clearProblemHistory() {
         if (!confirm("確定要清空這題的所有歷史執行紀錄嗎？此動作無法復原。")) return;
-        executionHistories[currentProbId] = []; 
+        
+        // 使用 delete 完全移除該題目的鍵值，而不只是變成空陣列
+        delete executionHistories[currentProbId]; 
+        
+        // 執行存檔，並在存檔完成後重新渲染畫面
         saveToLocal().then(() => openHistoryModal());
     }
 
