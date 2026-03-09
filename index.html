@@ -821,7 +821,7 @@
                 const lightweightDataString = JSON.stringify(cloudDb);
 
                 await firestore.collection('users').doc(currentUser.uid).set({
-                    dbData: lightweightDataString, // 存入極簡版資料
+                    //dbData: lightweightDataString, // 存入極簡版資料
                     historyData: historyString,    // 存入執行紀錄
                     bankName: currentBankName,
                     bankUrl: currentBankUrl,
@@ -1384,3 +1384,4 @@
 </script>
 </body>
 </html>
+
