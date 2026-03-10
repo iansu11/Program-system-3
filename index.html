@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>解題系統 V58 (自動更新偵測版)</title>
+    <title>解題系統 V59 (OOP多檔案版)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ace.js"></script>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
@@ -45,8 +45,8 @@
         body.resizing { cursor: row-resize !important; user-select: none; }
         body.resizing iframe { pointer-events: none; }
 
-        /* === 畫面 1: 單純登入頁面 === */
-        #view-login {
+        /* === 畫面 1 & 2: 登入與大廳 === */
+        #view-login, #view-portal {
             display: none; 
             flex-direction: column;
             align-items: center;
@@ -57,20 +57,7 @@
             text-align: center;
             z-index: 1000;
         }
-
-        /* === 畫面 2: 題庫大廳 === */
-        #view-portal {
-            display: none; 
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-            color: white;
-            text-align: center;
-            z-index: 1000;
-            overflow-y: auto;
-        }
+        #view-portal { overflow-y: auto; }
 
         .portal-container {
             background: rgba(255, 255, 255, 0.1);
@@ -140,13 +127,12 @@
         .btn-warning { background: var(--warning); color: #1e1e1e; }
         .btn-ai { background: var(--ai-color); color: white; } 
         
-        textarea, input:not(.auth-input), select {
+        textarea, input:not(.auth-input):not([type="checkbox"]), select {
             background: #fff; color: #333; border: 1px solid #ccc;
             padding: 10px; border-radius: 6px; font-family: 'Segoe UI', sans-serif; box-sizing: border-box;
         }
         textarea:focus, input:not(.auth-input):focus, select:focus { outline: 2px solid var(--accent); border-color: transparent; }
 
-        /* === Shared Page Header === */
         .page-header {
             display: flex; justify-content: space-between; align-items: center; 
             margin-bottom: 20px; border-bottom: 1px solid var(--border-light); padding-bottom: 15px; flex-shrink: 0;
@@ -154,7 +140,7 @@
         }
         .page-header h2 { color: #111827; }
 
-        /* === Views 3-6 (保持原本佈局) === */
+        /* === Views === */
         #view-categories { padding: 40px; max-width: 1400px; margin: 0 auto; width: 100%; overflow-y: auto; display: none; }
         .cat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 25px; }
         @media (max-width: 1100px) { .cat-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -207,10 +193,17 @@
         .problem-content pre code { background: transparent; color: inherit; padding: 0; }
 
         .pane-right { flex: 2; display: flex; flex-direction: column; background: var(--bg-pane-dark); color: var(--text-pane-dark); min-width: 400px; position: relative; }
-        .editor-toolbar { padding: 8px 15px; background: #252526; border-bottom: 1px solid #333; display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+        .editor-toolbar { padding: 8px 15px; background: #252526; border-bottom: 1px solid #333; display: flex; gap: 10px; align-items: center; flex-shrink: 0; flex-wrap: wrap; }
         .pane-right select { background: #1e1e1e; border: 1px solid #444; color: #fff; }
         .pane-right .btn-outline { border-color: #555; color: #ccc; }
         .pane-right .btn-outline:hover { background: #333; color: #fff; }
+        
+        /* === V59 File Tabs === */
+        .file-tabs-container { display: flex; gap: 5px; align-items: flex-end; margin-left: 10px; }
+        .file-tab { background: #333; color: #aaa; border: none; padding: 6px 15px; border-radius: 6px 6px 0 0; cursor: pointer; font-family: Consolas, monospace; font-size: 0.9rem; transition: 0.2s; }
+        .file-tab.active { background: #1e1e1e; color: #fff; font-weight: bold; border-top: 2px solid var(--accent); }
+        .file-tab:hover:not(.active) { background: #444; color: #ddd; }
+
         #editor { flex: 1; font-size: 16px; min-height: 100px; }
         .resizer-bar { height: 8px; background: #121212; border-top: 1px solid #333; border-bottom: 1px solid #333; cursor: row-resize; transition: background 0.2s; flex-shrink: 0; display: flex; justify-content: center; align-items: center; z-index: 100; user-select: none; }
         .resizer-bar:hover { background: var(--accent); }
@@ -250,21 +243,11 @@
         .hist-item:hover { background: #2a2a2a; }
         .hist-item.active { border-left: 3px solid var(--accent); background: #222; }
 
-        /* === V58 新增：更新提示浮窗 === */
         #updateToast {
-            display: none; 
-            position: fixed; 
-            bottom: 20px; 
-            right: 20px; 
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white; 
-            padding: 15px 20px; 
-            border-radius: 12px; 
-            box-shadow: 0 8px 20px rgba(0,0,0,0.3); 
-            z-index: 9999;
-            align-items: center;
-            gap: 15px;
-            animation: slideIn 0.4s ease-out forwards;
+            display: none; position: fixed; bottom: 20px; right: 20px; 
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; 
+            padding: 15px 20px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.3); 
+            z-index: 9999; align-items: center; gap: 15px; animation: slideIn 0.4s ease-out forwards;
         }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     </style>
@@ -273,7 +256,7 @@
 
 <div id="view-login">
     <div class="portal-container" style="max-width: 450px; padding: 50px 40px;">
-        <h1 style="font-size: 2.8rem; margin-bottom: 10px; letter-spacing: 2px;">🚀 解題系統</h1>
+        <h1 style="font-size: 2.8rem; margin-bottom: 10px; letter-spacing: 2px;">🚀 解題系統 V59</h1>
         <p style="font-size: 1.1rem; opacity: 0.9; margin-bottom: 30px;">請輸入您的帳號密碼進行登入或註冊</p>
         
         <div style="text-align: left;">
@@ -377,10 +360,16 @@
                     <option value="cpp">C++ (GCC)</option>
                     <option value="python">Python 3</option>
                 </select>
-                <button class="btn btn-outline btn-sm" onclick="adjustFontSize(-1)" title="縮小字體" style="margin-left:10px;">A-</button>
-                <button class="btn btn-outline btn-sm" onclick="adjustFontSize(1)" title="放大字體">A+</button>
-                <div style="flex:1;"></div>
                 
+                <div class="file-tabs-container" id="wsFileTabs" style="display:none; flex:1;">
+                    <button class="file-tab active" id="wsBtnMain" onclick="switchWsTab('main')">main.cpp</button>
+                    <button class="file-tab" id="wsBtnH" onclick="switchWsTab('h')">.h</button>
+                    <button class="file-tab" id="wsBtnCpp" onclick="switchWsTab('cpp')">.cpp</button>
+                </div>
+
+                <div style="flex:1;"></div>
+                <button class="btn btn-outline btn-sm" onclick="adjustFontSize(-1)" title="縮小字體">A-</button>
+                <button class="btn btn-outline btn-sm" onclick="adjustFontSize(1)" title="放大字體">A+</button>
                 <button id="modeBtn" class="btn btn-outline btn-sm" onclick="toggleCompileMode()" style="color:var(--accent); border-color:var(--accent);">☁️ 雲端編譯 (Wandbox)</button>
                 
                 <button class="btn btn-copy btn-sm" onclick="copyCode()">📋 複製</button>
@@ -399,7 +388,7 @@
 
 <div id="view-admin">
     <div class="admin-toolbar">
-        <h2 style="margin:0;">⚙️ 題目設定</h2>
+        <h2 style="margin:0;">⚙️ 題目設定 (V59)</h2>
         <div style="display:flex; gap:10px;">
             <button class="btn btn-outline header-btn" onclick="openHistoryModal()">📜 執行紀錄</button>
             <button class="btn btn-warning" onclick="openModelAnswerUI()">🔑 示範解答</button>
@@ -421,7 +410,7 @@
                 </div>
             </div>
             
-            <textarea id="editDesc" style="flex:1; resize:none;" placeholder="在此輸入題目內容。支援圖片語法 ![Alt](URL)。\n直接輸入星號圖形 (***) 或減號 (---) 即可顯示，不會自動變成列表或線條。"></textarea>
+            <textarea id="editDesc" style="flex:1; resize:none;" placeholder="在此輸入題目內容..."></textarea>
         </div>
         <div class="admin-col-right">
             <div class="admin-row-top" id="adminRowTop">
@@ -432,7 +421,25 @@
                         <option value="python">編輯 Python 3 模板</option>
                     </select>
                 </div>
-                <textarea id="editTemplate" style="flex:1; resize:none; font-family:'Consolas',monospace;" spellcheck="false" placeholder="// 設定該語言的預設代碼..."></textarea>
+
+                <div id="adminMultiFileConfig" style="display:flex; gap:15px; align-items:center; margin-bottom: 10px; padding: 10px; background: #2a2a2a; border-radius: 6px;">
+                    <label style="cursor:pointer; display:flex; align-items:center; gap:5px;">
+                        <input type="checkbox" id="editIsMultiFile" onchange="toggleAdminMultiFile()"> 
+                        <span>啟用多檔案 OOP 模式 (C++)</span>
+                    </label>
+                    <div id="adminClassNameDiv" style="display:none; align-items:center; gap:5px;">
+                        <span>Class 名稱:</span>
+                        <input type="text" id="editClassName" placeholder="例如: Circle" style="padding:4px 8px; width:120px; background:#121212; color:#fff; border:1px solid #555; border-radius:4px;" oninput="updateAdminTabNames()">
+                    </div>
+                </div>
+
+                <div class="file-tabs-container" id="adminFileTabs" style="display:none; margin-bottom: -1px; z-index: 10;">
+                    <button class="file-tab active" id="adminBtnMain" onclick="switchAdminTab('main')">main.cpp</button>
+                    <button class="file-tab" id="adminBtnH" onclick="switchAdminTab('h')">.h</button>
+                    <button class="file-tab" id="adminBtnCpp" onclick="switchAdminTab('cpp')">.cpp</button>
+                </div>
+
+                <textarea id="editTemplate" style="flex:1; resize:none; font-family:'Consolas',monospace; border-top-left-radius: 0;" spellcheck="false" placeholder="// 設定該語言的預設代碼..."></textarea>
             </div>
             <div class="resizer-bar" id="adminDragHandle"><div class="resizer-icon"></div></div>
             <div class="admin-row-bottom" id="adminRowBottom">
@@ -453,7 +460,7 @@
 
 <div id="backupModal" class="modal">
     <div class="modal-box" style="width:500px;">
-        <h3>📦 資料備份/還原 (V58 雲端版)</h3>
+        <h3>📦 資料備份/還原 (V59)</h3>
         <textarea id="backupStr" style="width:100%; height:100px; margin-bottom:10px;" placeholder="Backup Code (Base64)..."></textarea>
         
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-bottom:15px;">
@@ -474,7 +481,7 @@
 
 <div id="modelAnswerModal" class="modal">
     <div class="modal-box" style="width:600px; max-width:90%; height:500px;">
-        <h3>🔑 設定示範解答 (Model Answer)</h3>
+        <h3>🔑 設定示範解答</h3>
         <textarea id="modelAnswerInput" style="flex:1; resize:none; font-family:'Consolas',monospace; background:#1e1e1e; color:#d4d4d4; border:1px solid #333; padding:10px;" placeholder="#include <iostream>..." spellcheck="false"></textarea>
         <div style="display:flex; justify-content:flex-end; margin-top:10px;">
             <div style="display:flex; gap:10px;">
@@ -489,12 +496,8 @@
 
 <div id="aiHelperModal" class="modal">
     <div class="modal-box" style="width:600px; max-width:90%; height:550px;">
-        <h3 style="display:flex; align-items:center; gap:10px; color:var(--ai-color); margin-top:0;">
-            🤖 AI 程式碼診斷 (傳送門)
-        </h3>
-        <p style="color:#aaa; font-size:0.9rem; margin-top:-5px;">
-            系統已自動生成提問內容。您可以選擇僅複製文字，或複製並開啟新分頁。
-        </p>
+        <h3 style="display:flex; align-items:center; gap:10px; color:var(--ai-color); margin-top:0;">🤖 AI 程式碼診斷</h3>
+        <p style="color:#aaa; font-size:0.9rem; margin-top:-5px;">系統已自動生成提問內容 (包含多檔案)。</p>
         <textarea id="aiPromptOutput" style="flex:1; resize:none; font-family:'Consolas',monospace; background:#1e1e1e; color:#d4d4d4; border:1px solid #333; padding:10px; font-size:0.9rem;" readonly></textarea>
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
             <button class="btn btn-outline" onclick="document.getElementById('aiHelperModal').style.display='none'">關閉</button>
@@ -507,7 +510,7 @@
 <div id="historyModal" class="modal">
     <div class="modal-box" style="width:800px; max-width:95%; height:600px;">
         <h3 style="margin-top:0;">📜 歷史執行紀錄</h3>
-        <p style="color:#aaa; font-size:0.9rem; margin-top:-5px; margin-bottom:10px;">此處保留您每次點擊「執行測試」的紀錄（最多保留最新 30 筆）。</p>
+        <p style="color:#aaa; font-size:0.9rem; margin-top:-5px; margin-bottom:10px;">此處保留您每次點擊「執行測試」的紀錄。</p>
         
         <div style="display:flex; flex:1; gap:15px; overflow:hidden;">
             <div style="flex:1; overflow-y:auto; background:#121212; border:1px solid #333; border-radius:6px; min-width:200px;" id="historyList"></div>
@@ -525,31 +528,30 @@
 </div>
 
 <script>
-    // =========================================================
-    // 0. Eager Load (預先載入) & 變數宣告
-    // =========================================================
     let db = { categories: [], problems: [], version: "" };
     let executionHistories = {}; 
     let currentBankName = ""; 
-    let currentBankUrl = "";  // V58 新增：記錄目前的 JSON 來源網址以供檢查更新
+    let currentBankUrl = "";  
     let currentView = 'view-login';
-    let pendingUpdateDb = null; // 暫存從 GitHub 抓到的新題庫
+    let pendingUpdateDb = null; 
+
+    // V59: 新增預設範本，包含 header 和 implementation
+    const defaultTemplates = {
+        cpp: `#include <iostream>\nusing namespace std;\n\nint main() {\n    // C++ Solution\n    \n    return 0;\n}`,
+        cpp_h: `#pragma once\n\nclass MyClass {\npublic:\n    MyClass();\n};`,
+        cpp_cpp: `#include "MyClass.h"\n#include <iostream>\nusing namespace std;\n\nMyClass::MyClass() {\n    // Constructor\n}`,
+        python: `import sys\n\n# Python Solution\ndef main():\n    # Read input from stdin\n    lines = sys.stdin.read().splitlines()\n    # Write logic here\n    pass\n\nif __name__ == "__main__":\n    main()`
+    };
 
     const localData = localStorage.getItem('oj_v15_data');
     if (localData) { try { db = JSON.parse(localData); } catch(e){} }
-    
     const localHistory = localStorage.getItem('oj_v15_history');
     if (localHistory) { try { executionHistories = JSON.parse(localHistory); } catch(e){} }
-    
     const localBankName = localStorage.getItem('oj_v15_bank_name');
     if (localBankName) currentBankName = localBankName;
-
     const localBankUrl = localStorage.getItem('oj_v15_bank_url');
     if (localBankUrl) currentBankUrl = localBankUrl;
 
-    // ==========================================
-    // 1. Firebase 核心設定
-    // ==========================================
     const firebaseConfig = {
         apiKey: "AIzaSyD_DeIkusZN7r92UNE_yrR509IC_ZCa21U",
         authDomain: "program-system-1a17b.firebaseapp.com",
@@ -565,21 +567,11 @@
     const firestore = firebase.firestore();
     let currentUser = null;
 
-    // ==========================================
-    // 2. 帳號系統
-    // ==========================================
     function loginWithEmail() {
         const email = document.getElementById('emailInput').value.trim();
         const pwd = document.getElementById('passwordInput').value;
         if(!email || !pwd) { alert("請輸入電子郵件與密碼！"); return; }
-        
-        auth.signInWithEmailAndPassword(email, pwd).catch(err => {
-            if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
-                alert("登入失敗：帳號或密碼錯誤。如果您還沒有帳號，請點擊「註冊新帳號」。");
-            } else {
-                alert("登入失敗：" + err.message);
-            }
-        });
+        auth.signInWithEmailAndPassword(email, pwd).catch(err => alert("登入失敗：" + err.message));
     }
 
     function registerWithEmail() {
@@ -587,25 +579,14 @@
         const pwd = document.getElementById('passwordInput').value;
         if(!email || !pwd) { alert("請輸入電子郵件與密碼來建立帳號！"); return; }
         if(pwd.length < 6) { alert("密碼太短，請至少輸入 6 個字元！"); return; }
-
-        auth.createUserWithEmailAndPassword(email, pwd).then(() => {
-            alert("✅ 註冊成功！系統已自動為您登入。");
-        }).catch(err => {
-            if (err.code === 'auth/email-already-in-use') {
-                alert("註冊失敗：這個電子郵件已經被註冊過了，請直接點擊「登入系統」。");
-            } else {
-                alert("註冊失敗：" + err.message);
-            }
-        });
+        auth.createUserWithEmailAndPassword(email, pwd).then(() => alert("✅ 註冊成功！系統已自動為您登入。")).catch(err => alert("註冊失敗：" + err.message));
     }
 
     function logout() {
         if(confirm("確定要登出嗎？")) {
             auth.signOut().then(() => {
-                localStorage.removeItem('oj_v15_data');
-                localStorage.removeItem('oj_v15_history');
-                localStorage.removeItem('oj_v15_bank_name');
-                localStorage.removeItem('oj_v15_bank_url');
+                localStorage.removeItem('oj_v15_data'); localStorage.removeItem('oj_v15_history');
+                localStorage.removeItem('oj_v15_bank_name'); localStorage.removeItem('oj_v15_bank_url');
                 window.location.href = window.location.href.split('?')[0]; 
             });
         }
@@ -613,122 +594,59 @@
 
     auth.onAuthStateChanged(async (user) => {
         if (user) {
-            currentUser = user;
-            document.getElementById('user-name').innerText = user.email;
-            
-            // 效能優化 1：如果是直接進入題目 (有 probId)，且本地已存有快取，先利用本地資料快速渲染畫面，再於背景同步雲端資料。
+            currentUser = user; document.getElementById('user-name').innerText = user.email;
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('probId') && db && db.problems && db.problems.length > 0) {
-                checkUrlAndLoad(); 
-                loadUserDataFromCloud(true); // 帶入 true 表示這是背景執行
-            } else {
-                await loadUserDataFromCloud(false); 
-            }
-        } else {
-            currentUser = null;
-            showView('view-login');
-        }
+                checkUrlAndLoad(); loadUserDataFromCloud(true);
+            } else { await loadUserDataFromCloud(false); }
+        } else { currentUser = null; showView('view-login'); }
     });
 
-    // ==========================================
-    // 3. 雲端資料同步 & V58自動更新機制
-    // ==========================================
     async function loadUserDataFromCloud(isBackground = false) {
         if (!currentUser) return;
         try {
-            const docRef = firestore.collection('users').doc(currentUser.uid);
-            const docSnap = await docRef.get();
-            
+            const docSnap = await firestore.collection('users').doc(currentUser.uid).get();
             if (docSnap.exists) {
                 const data = docSnap.data();
-                
-                if (data.dbData) {
-                    db = JSON.parse(data.dbData);
-                    localStorage.setItem('oj_v15_data', data.dbData); 
-                }
-                if (data.historyData) {
-                    executionHistories = JSON.parse(data.historyData);
-                    localStorage.setItem('oj_v15_history', data.historyData);
-                }
-                if (data.bankName) {
-                    currentBankName = data.bankName;
-                    localStorage.setItem('oj_v15_bank_name', data.bankName);
-                    if(document.getElementById('currentBankName')) {
-                        document.getElementById('currentBankName').innerText = "📂 目前題庫: " + data.bankName;
-                    }
-                }
-                if (data.bankUrl) {
-                    currentBankUrl = data.bankUrl;
-                    localStorage.setItem('oj_v15_bank_url', data.bankUrl);
-                }
-            } else {
-                if (!isBackground) {
-                    db = { categories: [], problems: [], version: "" };
-                    executionHistories = {};
-                    currentBankName = "";
-                    currentBankUrl = "";
-                }
-            }
-            
-            // 如果不是背景執行，載入完畢後刷新畫面
-            if (!isBackground) {
-                checkUrlAndLoad();
-            }
-
-            // V58: 載入完畢後，偷偷去檢查 GitHub 有沒有新版本
+                if (data.dbData) { db = JSON.parse(data.dbData); localStorage.setItem('oj_v15_data', data.dbData); }
+                if (data.historyData) { executionHistories = JSON.parse(data.historyData); localStorage.setItem('oj_v15_history', data.historyData); }
+                if (data.bankName) { currentBankName = data.bankName; localStorage.setItem('oj_v15_bank_name', data.bankName); if(document.getElementById('currentBankName')) document.getElementById('currentBankName').innerText = "📂 目前題庫: " + data.bankName; }
+                if (data.bankUrl) { currentBankUrl = data.bankUrl; localStorage.setItem('oj_v15_bank_url', data.bankUrl); }
+            } else if (!isBackground) { db = { categories: [], problems: [], version: "" }; executionHistories = {}; currentBankName = ""; currentBankUrl = ""; }
+            if (!isBackground) checkUrlAndLoad();
             checkForUpdates();
-
-        } catch (e) { 
-            console.error("無法讀取雲端資料：", e); 
-            if (!isBackground) {
-                alert("⚠️ 無法讀取雲端資料！請確認您的 Firebase 安全規則。");
-                checkUrlAndLoad();
-            }
-        }
+        } catch (e) { console.error("雲端錯誤：", e); if (!isBackground) { alert("⚠️ 雲端讀取錯誤。"); checkUrlAndLoad(); } }
     }
 
-    // === V58 核心：檢查並套用更新 ===
     async function checkForUpdates() {
         if (!currentBankUrl) return; 
         try {
             const res = await fetch(currentBankUrl + '?t=' + new Date().getTime());
             if (res.ok) {
                 const newDb = await res.json();
-                // 若新版有 version 標籤，且跟本地的不一樣，就跳出更新提示
-                if (newDb.version && newDb.version !== db.version) {
-                    pendingUpdateDb = newDb;
-                    const toast = document.getElementById('updateToast');
-                    toast.style.display = 'flex';
-                }
+                if (newDb.version && newDb.version !== db.version) { pendingUpdateDb = newDb; document.getElementById('updateToast').style.display = 'flex'; }
             }
-        } catch (e) { console.error("檢查更新失敗", e); }
+        } catch (e) {}
     }
 
     async function applyUpdate() {
         if (!pendingUpdateDb) return;
-        const newDb = pendingUpdateDb;
-        
-        // 無損合併：保留學生的程式碼與編輯狀態
         if (db && db.problems) {
-            newDb.problems.forEach(newP => {
+            pendingUpdateDb.problems.forEach(newP => {
                 const oldP = db.problems.find(p => p.id === newP.id);
                 if (oldP) {
                     if (oldP.code_cpp !== undefined) newP.code_cpp = oldP.code_cpp;
+                    if (oldP.code_cpp_h !== undefined) newP.code_cpp_h = oldP.code_cpp_h;
+                    if (oldP.code_cpp_cpp !== undefined) newP.code_cpp_cpp = oldP.code_cpp_cpp;
                     if (oldP.code_python !== undefined) newP.code_python = oldP.code_python;
                     if (oldP.lastLang !== undefined) newP.lastLang = oldP.lastLang;
                     if (oldP.modelAnswer !== undefined) newP.modelAnswer = oldP.modelAnswer;
                 }
             });
         }
-        
-        db = newDb;
-        await saveToLocal();
-        
-        document.getElementById('updateToast').style.display = 'none';
-        pendingUpdateDb = null;
-        alert("✅ 題庫已成功同步至最新版本！\n您的作答紀錄皆已安全保留。");
-        
-        // 刷新目前畫面
+        db = pendingUpdateDb; await saveToLocal();
+        document.getElementById('updateToast').style.display = 'none'; pendingUpdateDb = null;
+        alert("✅ 題庫已成功同步至最新版本！");
         if (currentView === 'view-categories') renderCategoryList();
         if (currentView === 'view-problem-list') renderProblemList();
         if (currentView === 'view-workspace') _enterWorkspaceInternal(currentProbId, true);
@@ -737,200 +655,98 @@
     function checkUrlAndLoad() {
         const urlParams = new URLSearchParams(window.location.search);
         const probIdParam = urlParams.get('probId');
-
-        if (probIdParam) {
-            const p = db.problems.find(x => x.id === probIdParam);
-            if (p) {
-                history.replaceState({ view: 'workspace', probId: probIdParam }, '', window.location.href);
-                _enterWorkspaceInternal(probIdParam, false);
-            } else {
-                alert("找不到該題目！請重新從大廳選擇題庫。");
-                showView('view-portal');
-            }
+        if (probIdParam && db.problems.find(x => x.id === probIdParam)) {
+            history.replaceState({ view: 'workspace', probId: probIdParam }, '', window.location.href); _enterWorkspaceInternal(probIdParam, false);
         } else if (db.categories && db.categories.length > 0 && currentBankName) {
-            document.getElementById('currentBankName').innerText = "📂 目前題庫: " + currentBankName;
-            history.replaceState({ view: 'categories' }, '', window.location.pathname);
-            renderCategoryList();
-            showView('view-categories');
-        } else {
-            history.replaceState({ view: 'portal' }, '', window.location.pathname);
-            showView('view-portal');
-        }
+            document.getElementById('currentBankName').innerText = "📂 目前題庫: " + currentBankName; history.replaceState({ view: 'categories' }, '', window.location.pathname); renderCategoryList(); showView('view-categories');
+        } else { history.replaceState({ view: 'portal' }, '', window.location.pathname); showView('view-portal'); }
     }
 
     async function saveToLocal() { 
-        const dataString = JSON.stringify(db);
-        const historyString = JSON.stringify(executionHistories);
-        
-        localStorage.setItem('oj_v15_data', dataString); 
-        localStorage.setItem('oj_v15_history', historyString);
-        
+        const dataStr = JSON.stringify(db); const histStr = JSON.stringify(executionHistories);
+        localStorage.setItem('oj_v15_data', dataStr); localStorage.setItem('oj_v15_history', histStr);
         if (currentUser) {
-            try {
-                await firestore.collection('users').doc(currentUser.uid).set({
-                    dbData: dataString,
-                    historyData: historyString,
-                    bankName: currentBankName,
-                    bankUrl: currentBankUrl,
-                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true });
-            } catch(e) { 
-                console.error("雲端同步失敗：", e); 
-                alert("⚠️ 雲端存檔失敗！您的進度目前只存在瀏覽器中。請確認 Firebase 規則。");
-            }
+            try { await firestore.collection('users').doc(currentUser.uid).set({ dbData: dataStr, historyData: histStr, bankName: currentBankName, bankUrl: currentBankUrl, lastUpdated: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }); } 
+            catch(e) { console.error("雲端同步失敗", e); }
         }
     }
 
-    // ==========================================
-    // 4. 解題系統核心邏輯
-    // ==========================================
-    let currentCatId = null;
-    let currentProbId = null;
-    let isLocalMode = false;
-    let pendingRestoreFileName = ""; 
+    let currentCatId = null; let currentProbId = null; let isLocalMode = false; let pendingRestoreFileName = ""; 
+    let editor = null; let isCatSortMode = false; let isProbSortMode = false; let currentFontSize = 16;
     
-    const defaultTemplates = {
-        cpp: `#include <iostream>\nusing namespace std;\n\nint main() {\n    // C++ Solution\n    \n    return 0;\n}`,
-        python: `import sys\n\n# Python Solution\ndef main():\n    # Read input from stdin\n    lines = sys.stdin.read().splitlines()\n    # Write logic here\n    pass\n\nif __name__ == "__main__":\n    main()`
-    };
-
-    let editor = null;
-    let isCatSortMode = false;
-    let isProbSortMode = false;
-    let currentFontSize = 16;
-    let adminTempTemplates = { cpp: "", python: "" };
+    // V59: Editor 頁籤與狀態管理
+    let currentWsTab = 'main';
+    let currentAdminTab = 'main';
+    let adminTempTemplates = { cpp: "", cpp_h: "", cpp_cpp: "", python: "" };
     let currentAdminLang = 'cpp';
 
     window.onload = function() {
-        editor = ace.edit("editor");
-        editor.setTheme("ace/theme/twilight");
-        editor.session.setMode("ace/mode/c_cpp");
-        editor.setFontSize(currentFontSize);
-        editor.setShowPrintMargin(false);
-        
-        window.addEventListener('popstate', handlePopState);
-
-        initResizer();
-        initAdminResizer(); 
-        enableTabInTextarea('editTemplate');
-        enableTabInTextarea('modelAnswerInput');
+        editor = ace.edit("editor"); editor.setTheme("ace/theme/twilight"); editor.session.setMode("ace/mode/c_cpp"); editor.setFontSize(currentFontSize); editor.setShowPrintMargin(false);
+        window.addEventListener('popstate', handlePopState); initResizer(); initAdminResizer(); enableTabInTextarea('editTemplate'); enableTabInTextarea('modelAnswerInput');
     };
 
     function handlePopState(event) {
-        const state = event.state;
-        if (!currentUser) return; 
-        
+        const state = event.state; if (!currentUser) return; 
         const goingTo = state ? state.view : 'portal';
-
         if (goingTo === 'portal') { showView('view-portal'); }
         else if (goingTo === 'categories') { currentCatId = null; renderCategoryList(); showView('view-categories'); } 
         else if (goingTo === 'problem-list') { currentCatId = state.catId; renderProblemList(); showView('view-problem-list'); } 
-        else if (goingTo === 'workspace') { 
-            const fromAdmin = (currentView === 'view-admin');
-            currentProbId = state.probId; 
-            _enterWorkspaceInternal(state.probId, fromAdmin); 
-        } 
+        else if (goingTo === 'workspace') { currentProbId = state.probId; _enterWorkspaceInternal(state.probId, currentView === 'view-admin'); } 
         else if (goingTo === 'admin') { currentProbId = state.probId; _goToAdminInternal(); }
     }
 
     async function fetchAndLoadBank(jsonUrl, displayName, forceReset = false) {
         if(!currentUser) { alert("請先登入帳號！"); return; }
-        
         try {
-            const noCacheUrl = jsonUrl + '?t=' + new Date().getTime();
-            const response = await fetch(noCacheUrl);
-            
-            if (response.ok) {
-                const newDb = await response.json();
-                
+            const res = await fetch(jsonUrl + '?t=' + new Date().getTime());
+            if (res.ok) {
+                const newDb = await res.json();
                 if (!forceReset && db && db.problems) {
                     newDb.problems.forEach(newP => {
                         const oldP = db.problems.find(p => p.id === newP.id);
                         if (oldP) {
                             if (oldP.code_cpp !== undefined) newP.code_cpp = oldP.code_cpp;
+                            if (oldP.code_cpp_h !== undefined) newP.code_cpp_h = oldP.code_cpp_h;
+                            if (oldP.code_cpp_cpp !== undefined) newP.code_cpp_cpp = oldP.code_cpp_cpp;
                             if (oldP.code_python !== undefined) newP.code_python = oldP.code_python;
                             if (oldP.lastLang !== undefined) newP.lastLang = oldP.lastLang;
-                            if (oldP.modelAnswer !== undefined) newP.modelAnswer = oldP.modelAnswer;
                         }
                     });
-                    newDb.version = newDb.version || db.version; // 繼承或更新版本號
+                    newDb.version = newDb.version || db.version; 
                 }
-                
-                db = newDb;
-                currentBankUrl = jsonUrl;
-                currentBankName = displayName || jsonUrl;
-                
-                localStorage.setItem('oj_v15_bank_name', currentBankName);
-                localStorage.setItem('oj_v15_bank_url', currentBankUrl);
-                document.getElementById('currentBankName').innerText = "📂 目前題庫: " + currentBankName;
-                
-                await saveToLocal(); 
-                history.pushState({ view: 'categories' }, '', window.location.pathname);
-                renderCategoryList();
-                showView('view-categories');
-            } else { throw new Error("伺服器回傳狀態：" + response.status); }
-        } catch (err) { alert("載入失敗！請確認 GitHub 檔案是否存在\n\n詳細錯誤：" + err.message); }
+                db = newDb; currentBankUrl = jsonUrl; currentBankName = displayName || jsonUrl;
+                localStorage.setItem('oj_v15_bank_name', currentBankName); localStorage.setItem('oj_v15_bank_url', currentBankUrl); document.getElementById('currentBankName').innerText = "📂 目前題庫: " + currentBankName;
+                await saveToLocal(); history.pushState({ view: 'categories' }, '', window.location.pathname); renderCategoryList(); showView('view-categories');
+            } else throw new Error();
+        } catch (err) { alert("載入失敗"); }
     }
 
-    function backToPortal() {
-        history.pushState({ view: 'portal' }, '', window.location.pathname);
-        showView('view-portal');
-    }
-
-    function resetCurrentBank() {
-        if (!currentBankUrl) { alert("目前是空白狀態，無法重新載入。"); return; }
-        if (confirm("⚠️ 警告：這將會清除您目前所有的代碼與設定，重新下載乾淨題庫！\n(您的歷史執行紀錄依然會被保留)")) {
-            fetchAndLoadBank(currentBankUrl, currentBankName, true); 
-        }
-    }
-
-    function hardResetAll() {
-        if (confirm("⚠️ 警告：這將會清除所有資料，讓系統回到「完全空白」狀態！確定嗎？")) {
-            db = { categories: [], problems: [], version: "" };
-            currentBankName = "自訂新題庫 (空白)";
-            currentBankUrl = "";
-            localStorage.setItem('oj_v15_bank_name', currentBankName);
-            localStorage.removeItem('oj_v15_bank_url');
-            saveToLocal();
-            document.getElementById('currentBankName').innerText = "📂 " + currentBankName;
-            renderCategoryList();
-        }
-    }
+    function backToPortal() { history.pushState({ view: 'portal' }, '', window.location.pathname); showView('view-portal'); }
+    function resetCurrentBank() { if(confirm("確定重新下載題庫？")) fetchAndLoadBank(currentBankUrl, currentBankName, true); }
+    function hardResetAll() { if(confirm("確定全部重置？")) { db = { categories: [], problems: [], version: "" }; currentBankName = "自訂新題庫 (空白)"; currentBankUrl = ""; localStorage.setItem('oj_v15_bank_name', currentBankName); localStorage.removeItem('oj_v15_bank_url'); saveToLocal(); document.getElementById('currentBankName').innerText = "📂 " + currentBankName; renderCategoryList(); } }
 
     function enableTabInTextarea(id) {
         const el = document.getElementById(id); if (!el) return;
         el.addEventListener('keydown', function(e) {
-            if (e.key === 'Tab') {
-                e.preventDefault(); const start = this.selectionStart; const end = this.selectionEnd;
-                this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
-                this.selectionStart = this.selectionEnd = start + 4;
-            }
+            if (e.key === 'Tab') { e.preventDefault(); const start = this.selectionStart; const end = this.selectionEnd; this.value = this.value.substring(0, start) + "    " + this.value.substring(end); this.selectionStart = this.selectionEnd = start + 4; }
         });
     }
     function autoResize(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
 
     function initResizer() {
-        const handle = document.getElementById('dragHandle'); const consoleArea = document.getElementById('consoleArea');
-        const paneRight = document.getElementById('paneRight'); const editorDiv = document.getElementById('editor');
+        const handle = document.getElementById('dragHandle'); const consoleArea = document.getElementById('consoleArea'); const paneRight = document.getElementById('paneRight'); const editorDiv = document.getElementById('editor');
         handle.addEventListener('mousedown', function(e) {
             e.preventDefault(); document.body.classList.add('resizing'); editorDiv.style.pointerEvents = 'none';
             const startY = e.clientY; const startHeight = consoleArea.offsetHeight; const paneHeight = paneRight.offsetHeight;
-            function doDrag(e) {
-                const deltaY = startY - e.clientY; let newHeight = startHeight + deltaY;
-                if (newHeight < 40) newHeight = 40; if (newHeight > paneHeight - 100) newHeight = paneHeight - 100;
-                consoleArea.style.height = newHeight + 'px'; editor.resize();
-            }
+            function doDrag(e) { const deltaY = startY - e.clientY; let newHeight = startHeight + deltaY; if (newHeight < 40) newHeight = 40; if (newHeight > paneHeight - 100) newHeight = paneHeight - 100; consoleArea.style.height = newHeight + 'px'; editor.resize(); }
             function stopDrag() { document.removeEventListener('mousemove', doDrag); document.removeEventListener('mouseup', stopDrag); document.body.classList.remove('resizing'); editorDiv.style.pointerEvents = 'auto'; }
             document.addEventListener('mousemove', doDrag); document.addEventListener('mouseup', stopDrag);
         });
     }
-
     function initAdminResizer() {
         const handle = document.getElementById('adminDragHandle'); const bottomArea = document.getElementById('adminRowBottom');
         handle.addEventListener('mousedown', function(e) {
-            e.preventDefault(); document.body.classList.add('resizing');
-            const startHeight = bottomArea.offsetHeight; bottomArea.style.flex = 'none'; bottomArea.style.height = startHeight + 'px'; 
-            const startY = e.clientY;
+            e.preventDefault(); document.body.classList.add('resizing'); const startHeight = bottomArea.offsetHeight; bottomArea.style.flex = 'none'; bottomArea.style.height = startHeight + 'px'; const startY = e.clientY;
             function doDrag(e) { const deltaY = startY - e.clientY; let newHeight = startHeight + deltaY; if (newHeight < 100) newHeight = 100; bottomArea.style.height = newHeight + 'px'; }
             function stopDrag() { document.removeEventListener('mousemove', doDrag); document.removeEventListener('mouseup', stopDrag); document.body.classList.remove('resizing'); }
             document.addEventListener('mousemove', doDrag); document.addEventListener('mouseup', stopDrag);
@@ -938,300 +754,310 @@
     }
 
     function showView(viewId) {
-        currentView = viewId; 
-        isCatSortMode = false; isProbSortMode = false; updateSortUI();
+        currentView = viewId; isCatSortMode = false; isProbSortMode = false; updateSortUI();
         if (viewId === 'view-categories' || viewId === 'view-problem-list') document.body.classList.add('light-mode'); else document.body.classList.remove('light-mode');
-        ['view-login', 'view-portal', 'view-categories', 'view-problem-list', 'view-workspace', 'view-admin'].forEach(id => { 
-            const el = document.getElementById(id);
-            if(el) el.style.display = 'none'; 
-        });
-        const target = document.getElementById(viewId);
-        if (target) {
-            if (viewId === 'view-login' || viewId === 'view-portal' || viewId === 'view-workspace' || viewId === 'view-admin') {
-                target.style.display = 'flex';
-            } else {
-                target.style.display = 'block';
-            }
-        }
+        ['view-login', 'view-portal', 'view-categories', 'view-problem-list', 'view-workspace', 'view-admin'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
+        const target = document.getElementById(viewId); if (target) { if (viewId === 'view-login' || viewId === 'view-portal' || viewId === 'view-workspace' || viewId === 'view-admin') target.style.display = 'flex'; else target.style.display = 'block'; }
         if(viewId === 'view-workspace' && editor) setTimeout(() => editor.resize(), 50);
     }
 
     function openCategory(id) { history.pushState({ view: 'problem-list', catId: id }, '', ''); currentCatId = id; renderProblemList(); showView('view-problem-list'); }
 
+    // === V59: Workspace Editor Logic ===
     function _enterWorkspaceInternal(id, fromAdmin = false) {
-        currentProbId = id;
-        const p = db.problems.find(x => x.id === id);
-        if (!p) return;
+        currentProbId = id; const p = db.problems.find(x => x.id === id); if (!p) return;
         
+        // Ensure templates exist
         if (p.tpl_cpp === undefined) p.tpl_cpp = p.templateCode || defaultTemplates.cpp;
+        if (p.tpl_cpp_h === undefined) p.tpl_cpp_h = defaultTemplates.cpp_h;
+        if (p.tpl_cpp_cpp === undefined) p.tpl_cpp_cpp = defaultTemplates.cpp_cpp;
         if (p.tpl_python === undefined) p.tpl_python = defaultTemplates.python;
         
         if (!fromAdmin) { 
-            p.code_cpp = p.tpl_cpp; 
-            p.code_python = p.tpl_python; 
+            if(p.code_cpp === undefined) p.code_cpp = p.tpl_cpp; 
+            if(p.code_cpp_h === undefined) p.code_cpp_h = p.tpl_cpp_h; 
+            if(p.code_cpp_cpp === undefined) p.code_cpp_cpp = p.tpl_cpp_cpp; 
+            if(p.code_python === undefined) p.code_python = p.tpl_python; 
         } 
         
         document.getElementById('wsTitle').innerText = p.title;
         document.getElementById('wsDesc').innerHTML = parseContent(p.desc || "");
-        const lang = p.lastLang || 'cpp'; document.getElementById('langSelect').value = lang; 
         
+        const lang = p.lastLang || 'cpp'; document.getElementById('langSelect').value = lang; 
+        updateWsTabsVisibility(lang, p);
+        
+        currentWsTab = 'main';
         if (lang === 'cpp') { editor.session.setMode("ace/mode/c_cpp"); editor.setValue(p.code_cpp, -1); } 
         else if (lang === 'python') { editor.session.setMode("ace/mode/python"); editor.setValue(p.code_python, -1); }
         
-        document.getElementById('outputLogs').innerHTML = '<div style="color:#666;">等待執行...</div>';
-        showView('view-workspace');
+        document.getElementById('outputLogs').innerHTML = '<div style="color:#666;">等待執行...</div>'; showView('view-workspace');
+    }
+
+    function updateWsTabsVisibility(lang, p) {
+        const tabsContainer = document.getElementById('wsFileTabs');
+        if (lang === 'cpp' && p.isMultiFile) {
+            tabsContainer.style.display = 'flex';
+            const cname = p.className || 'MyClass';
+            document.getElementById('wsBtnH').innerText = cname + '.h';
+            document.getElementById('wsBtnCpp').innerText = cname + '.cpp';
+            document.querySelectorAll('#wsFileTabs .file-tab').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('wsBtnMain').classList.add('active');
+        } else {
+            tabsContainer.style.display = 'none';
+        }
+    }
+
+    function switchWsTab(tab) {
+        const p = db.problems.find(x => x.id === currentProbId);
+        if (currentWsTab === 'main') p.code_cpp = editor.getValue();
+        else if (currentWsTab === 'h') p.code_cpp_h = editor.getValue();
+        else if (currentWsTab === 'cpp') p.code_cpp_cpp = editor.getValue();
+
+        currentWsTab = tab;
+        document.querySelectorAll('#wsFileTabs .file-tab').forEach(btn => btn.classList.remove('active'));
+        
+        if (tab === 'main') { document.getElementById('wsBtnMain').classList.add('active'); editor.setValue(p.code_cpp, -1); }
+        else if (tab === 'h') { document.getElementById('wsBtnH').classList.add('active'); editor.setValue(p.code_cpp_h, -1); }
+        else if (tab === 'cpp') { document.getElementById('wsBtnCpp').classList.add('active'); editor.setValue(p.code_cpp_cpp, -1); }
+    }
+
+    function changeWorkspaceLang() { 
+        const p = db.problems.find(x => x.id === currentProbId); 
+        const oldLang = p.lastLang || 'cpp';
+        
+        if (oldLang === 'cpp' && p.isMultiFile) {
+            if (currentWsTab === 'main') p.code_cpp = editor.getValue();
+            else if (currentWsTab === 'h') p.code_cpp_h = editor.getValue();
+            else if (currentWsTab === 'cpp') p.code_cpp_cpp = editor.getValue();
+        } else {
+            p['code_' + oldLang] = editor.getValue(); 
+        }
+        
+        const newLang = document.getElementById('langSelect').value; 
+        p.lastLang = newLang; 
+        updateWsTabsVisibility(newLang, p);
+        currentWsTab = 'main';
+
+        if (newLang === 'cpp') { editor.session.setMode("ace/mode/c_cpp"); editor.setValue(p.code_cpp, -1); } 
+        else if (newLang === 'python') { editor.session.setMode("ace/mode/python"); editor.setValue(p.code_python, -1); }
     }
 
     function goToAdmin() { 
         const lang = document.getElementById('langSelect').value;
         const p = db.problems.find(x => x.id === currentProbId);
-        if(p) p['code_' + lang] = editor.getValue(); 
         
-        history.pushState({ view: 'admin', probId: currentProbId }, '', ''); 
-        _goToAdminInternal(); 
+        if (lang === 'cpp' && p.isMultiFile) {
+            if (currentWsTab === 'main') p.code_cpp = editor.getValue();
+            else if (currentWsTab === 'h') p.code_cpp_h = editor.getValue();
+            else if (currentWsTab === 'cpp') p.code_cpp_cpp = editor.getValue();
+        } else {
+            p['code_' + lang] = editor.getValue(); 
+        }
+        history.pushState({ view: 'admin', probId: currentProbId }, '', ''); _goToAdminInternal(); 
     }
 
+    // === V59: Admin Config Logic ===
     function _goToAdminInternal() {
         const p = db.problems.find(x => x.id === currentProbId); 
         document.getElementById('editTitle').value = p.title; document.getElementById('editDesc').value = p.desc; 
-        adminTempTemplates.cpp = p.tpl_cpp || p.templateCode || defaultTemplates.cpp; adminTempTemplates.python = p.tpl_python || defaultTemplates.python;
-        document.getElementById('adminLangSelect').value = 'cpp'; currentAdminLang = 'cpp';
+        
+        document.getElementById('editIsMultiFile').checked = !!p.isMultiFile;
+        document.getElementById('editClassName').value = p.className || 'MyClass';
+
+        adminTempTemplates.cpp = p.tpl_cpp || p.templateCode || defaultTemplates.cpp; 
+        adminTempTemplates.cpp_h = p.tpl_cpp_h || defaultTemplates.cpp_h;
+        adminTempTemplates.cpp_cpp = p.tpl_cpp_cpp || defaultTemplates.cpp_cpp;
+        adminTempTemplates.python = p.tpl_python || defaultTemplates.python;
+
+        document.getElementById('adminLangSelect').value = 'cpp'; currentAdminLang = 'cpp'; currentAdminTab = 'main';
+        
+        toggleAdminMultiFile(); updateAdminTabNames();
         document.getElementById('editTemplate').value = adminTempTemplates.cpp;
+        
         const c = document.getElementById('adminTestCases'); c.innerHTML = ''; 
         (p.testCases || []).forEach(tc => addTestCaseUI(tc.input, tc.output)); 
         setTimeout(() => { document.querySelectorAll('#adminTestCases textarea').forEach(ta => autoResize(ta)); }, 0);
         showView('view-admin'); 
     }
 
-    function enableDragSort(containerId, itemClass, onUpdateOrder) {
-        const container = document.getElementById(containerId); let draggedItem = null;
-        container.addEventListener('dragstart', (e) => { if(!e.target.classList.contains(itemClass)) return; draggedItem = e.target; e.target.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
-        container.addEventListener('dragend', (e) => { if(!e.target.classList.contains(itemClass)) return; e.target.classList.remove('dragging'); draggedItem = null; onUpdateOrder(); });
-        container.addEventListener('dragenter', (e) => {
-            e.preventDefault(); if (!draggedItem) return; const target = e.target.closest(`.${itemClass}`);
-            if (target && target !== draggedItem) { const children = [...container.children]; const curIndex = children.indexOf(draggedItem); const targetIndex = children.indexOf(target);
-                if (curIndex > targetIndex) { container.insertBefore(draggedItem, target); } else { container.insertBefore(draggedItem, target.nextSibling); } }
-        });
-        container.addEventListener('dragover', (e) => { e.preventDefault(); });
+    function toggleAdminMultiFile() {
+        const isMulti = document.getElementById('editIsMultiFile').checked;
+        const isCpp = document.getElementById('adminLangSelect').value === 'cpp';
+
+        if (isCpp && isMulti) {
+            document.getElementById('adminClassNameDiv').style.display = 'flex';
+            document.getElementById('adminFileTabs').style.display = 'flex';
+        } else {
+            document.getElementById('adminClassNameDiv').style.display = 'none';
+            document.getElementById('adminFileTabs').style.display = 'none';
+        }
+        if (!isMulti && currentAdminTab !== 'main') switchAdminTab('main');
     }
 
-    function toggleCatSortMode() { isCatSortMode = !isCatSortMode; updateSortUI(); renderCategoryList(); }
-    
-    function renderCategoryList() {
-        const container = document.getElementById('groupedCategoryContainer'); container.innerHTML = '';
-        const grid = document.createElement('div'); grid.className = 'cat-grid'; grid.id = 'main-cat-grid';
-        if (isCatSortMode) { grid.classList.add('sort-mode'); }
-
-        db.categories.forEach(cat => {
-            const probCount = db.problems.filter(p => p.catId === cat.id).length;
-            const card = document.createElement('div'); card.className = 'cat-card'; card.setAttribute('draggable', isCatSortMode); card.dataset.id = cat.id;
-            card.innerHTML = `<div class="cat-title">${cat.name}</div><div class="cat-count">${probCount} 題</div><div class="cat-actions"><button class="btn btn-outline btn-sm" onclick="editCategory(event, '${cat.id}')">✏️</button><button class="btn btn-outline btn-sm" onclick="deleteCategory(event, '${cat.id}')" style="color:#f44747; border-color:#f44747;">🗑️</button></div>`;
-            card.onclick = (e) => { if(!isCatSortMode && !e.target.closest('button')) openCategory(cat.id); };
-            grid.appendChild(card);
-        });
-        container.appendChild(grid);
-        if (isCatSortMode) { enableDragSort(grid.id, 'cat-card', saveCategoryOrder); }
+    function updateAdminTabNames() {
+        let cname = document.getElementById('editClassName').value.trim() || 'MyClass';
+        document.getElementById('adminBtnH').innerText = cname + '.h';
+        document.getElementById('adminBtnCpp').innerText = cname + '.cpp';
     }
 
-    function saveCategoryOrder() { 
-        const cards = document.querySelectorAll('.cat-card'); const newOrder = []; 
-        cards.forEach(card => { const cat = db.categories.find(c => c.id === card.dataset.id); if(cat) newOrder.push(cat); }); 
-        db.categories = newOrder; saveToLocal(); 
+    function switchAdminTab(tab) {
+        if (currentAdminTab === 'main') adminTempTemplates.cpp = document.getElementById('editTemplate').value;
+        else if (currentAdminTab === 'h') adminTempTemplates.cpp_h = document.getElementById('editTemplate').value;
+        else if (currentAdminTab === 'cpp') adminTempTemplates.cpp_cpp = document.getElementById('editTemplate').value;
+
+        currentAdminTab = tab;
+        document.querySelectorAll('#adminFileTabs .file-tab').forEach(btn => btn.classList.remove('active'));
+        
+        if (tab === 'main') { document.getElementById('adminBtnMain').classList.add('active'); document.getElementById('editTemplate').value = adminTempTemplates.cpp; }
+        else if (tab === 'h') { document.getElementById('adminBtnH').classList.add('active'); document.getElementById('editTemplate').value = adminTempTemplates.cpp_h; }
+        else if (tab === 'cpp') { document.getElementById('adminBtnCpp').classList.add('active'); document.getElementById('editTemplate').value = adminTempTemplates.cpp_cpp; }
     }
-    
-    function createCategory() { if(isCatSortMode) return; const name = prompt("新分類名稱："); if(!name) return; db.categories.push({ id: Date.now().toString(), name: name }); saveToLocal(); renderCategoryList(); }
-    function editCategory(e, id) { e.stopPropagation(); const cat = db.categories.find(c => c.id === id); const newName = prompt("修改分類名稱：", cat.name); if(newName) { cat.name = newName; saveToLocal(); renderCategoryList(); } }
-    function deleteCategory(e, id) { e.stopPropagation(); if(!confirm("確定刪除？此分類下的題目也會一併刪除。")) return; db.categories = db.categories.filter(c => c.id !== id); db.problems = db.problems.filter(p => p.catId !== id); saveToLocal(); renderCategoryList(); }
 
-    function toggleProbSortMode() { isProbSortMode = !isProbSortMode; updateSortUI(); renderProblemList(); }
-    function renderProblemList() {
-        const cat = db.categories.find(c => c.id === currentCatId);
-        document.getElementById('currentCatTitle').innerText = cat ? cat.name : "分類題庫";
-        const container = document.getElementById('probListContainer');
-        if (isProbSortMode) { container.classList.add('sort-mode'); } else { container.classList.remove('sort-mode'); const newCont = container.cloneNode(false); container.parentNode.replaceChild(newCont, container); }
-        const currentContainer = document.getElementById('probListContainer');
-        if (isProbSortMode) { enableDragSort('probListContainer', 'prob-item', saveProblemOrder); }
-        currentContainer.innerHTML = '';
-        const catProblems = db.problems.filter(p => p.catId === currentCatId);
-        const emptyMsg = document.getElementById('emptyMsg');
-        if (catProblems.length === 0) { emptyMsg.style.display = 'block'; } else {
-            emptyMsg.style.display = 'none';
-            catProblems.forEach(p => {
-                const item = document.createElement('div');
-                item.className = 'prob-item'; item.setAttribute('draggable', isProbSortMode); item.dataset.id = p.id;
-                
-                item.onclick = (e) => { 
-                    if(!isProbSortMode && !e.target.closest('button')) {
-                        const baseUrl = window.location.href.split('?')[0]; 
-                        window.open(`${baseUrl}?probId=${p.id}`, '_blank');
-                    } 
-                };
+    function changeAdminLang() {
+        if (currentAdminLang === 'cpp') {
+            if (currentAdminTab === 'main') adminTempTemplates.cpp = document.getElementById('editTemplate').value;
+            else if (currentAdminTab === 'h') adminTempTemplates.cpp_h = document.getElementById('editTemplate').value;
+            else if (currentAdminTab === 'cpp') adminTempTemplates.cpp_cpp = document.getElementById('editTemplate').value;
+        } else {
+            adminTempTemplates.python = document.getElementById('editTemplate').value;
+        }
 
-                item.innerHTML = `
-                    <div style="flex:1; overflow:hidden;">
-                        <div class="prob-title">${p.title}</div><div class="prob-desc-preview">${p.desc.substring(0, 50)}...</div>
-                    </div>
-                    <div class="prob-actions">
-                        <button class="prob-btn-icon prob-edit-btn" onclick="editProblemInList(event, '${p.id}')" title="修改題目">✏️</button>
-                        <button class="prob-btn-icon prob-del-btn" onclick="deleteProblemInList(event, '${p.id}')" title="刪除題目">🗑️</button>
-                    </div>
-                `;
-                currentContainer.appendChild(item);
-            });
+        const newLang = document.getElementById('adminLangSelect').value; currentAdminLang = newLang;
+
+        if (newLang === 'cpp') {
+            document.getElementById('adminMultiFileConfig').style.display = 'flex';
+            currentAdminTab = 'main'; switchAdminTab('main'); toggleAdminMultiFile();
+        } else {
+            document.getElementById('adminMultiFileConfig').style.display = 'none';
+            document.getElementById('adminFileTabs').style.display = 'none';
+            document.getElementById('editTemplate').value = adminTempTemplates.python;
         }
     }
-    function saveProblemOrder() {
-        const items = document.querySelectorAll('#probListContainer .prob-item'); const newCatProbs = []; 
-        items.forEach(item => { const p = db.problems.find(x => x.id === item.dataset.id); if(p) newCatProbs.push(p); });
-        const otherProbs = db.problems.filter(p => p.catId !== currentCatId); db.problems = otherProbs.concat(newCatProbs); saveToLocal();
+
+    function saveAdminAndBack() { 
+        const p = db.problems.find(x => x.id === currentProbId); 
+        p.title = document.getElementById('editTitle').value; p.desc = document.getElementById('editDesc').value; 
+        
+        if (currentAdminLang === 'cpp') {
+            if (currentAdminTab === 'main') adminTempTemplates.cpp = document.getElementById('editTemplate').value;
+            else if (currentAdminTab === 'h') adminTempTemplates.cpp_h = document.getElementById('editTemplate').value;
+            else if (currentAdminTab === 'cpp') adminTempTemplates.cpp_cpp = document.getElementById('editTemplate').value;
+        } else { adminTempTemplates.python = document.getElementById('editTemplate').value; }
+
+        p.tpl_cpp = adminTempTemplates.cpp; p.tpl_cpp_h = adminTempTemplates.cpp_h; p.tpl_cpp_cpp = adminTempTemplates.cpp_cpp;
+        p.tpl_python = adminTempTemplates.python;
+        
+        p.isMultiFile = document.getElementById('editIsMultiFile').checked;
+        p.className = document.getElementById('editClassName').value.trim() || 'MyClass';
+
+        const inputs = document.querySelectorAll('.tc-input'); const outputs = document.querySelectorAll('.tc-output'); 
+        p.testCases = []; for(let i=0; i<inputs.length; i++) p.testCases.push({ input: inputs[i].value, output: outputs[i].value }); 
+        
+        saveToLocal(); history.back(); 
     }
-    function createProblemInCat() { 
-        if(isProbSortMode) return; const title = prompt("題目名稱："); 
-        if(title) { 
-            db.problems.push({ 
-                id: Date.now().toString(), catId: currentCatId, title: title, desc: "請輸入題目描述...", 
-                tpl_cpp: defaultTemplates.cpp, tpl_python: defaultTemplates.python, code_cpp: defaultTemplates.cpp, code_python: defaultTemplates.python,
-                testCases: [{ input: "1 2", output: "3" }], lastLang: 'cpp' 
-            }); 
-            saveToLocal(); renderProblemList(); 
-        } 
-    }
-    
+
+    // Drag and drop & Other standard methods...
+    function enableDragSort(containerId, itemClass, onUpdateOrder) { const container = document.getElementById(containerId); let draggedItem = null; container.addEventListener('dragstart', (e) => { if(!e.target.classList.contains(itemClass)) return; draggedItem = e.target; e.target.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }); container.addEventListener('dragend', (e) => { if(!e.target.classList.contains(itemClass)) return; e.target.classList.remove('dragging'); draggedItem = null; onUpdateOrder(); }); container.addEventListener('dragenter', (e) => { e.preventDefault(); if (!draggedItem) return; const target = e.target.closest(`.${itemClass}`); if (target && target !== draggedItem) { const children = [...container.children]; const curIndex = children.indexOf(draggedItem); const targetIndex = children.indexOf(target); if (curIndex > targetIndex) { container.insertBefore(draggedItem, target); } else { container.insertBefore(draggedItem, target.nextSibling); } } }); container.addEventListener('dragover', (e) => { e.preventDefault(); }); }
+    function toggleCatSortMode() { isCatSortMode = !isCatSortMode; updateSortUI(); renderCategoryList(); }
+    function renderCategoryList() { const container = document.getElementById('groupedCategoryContainer'); container.innerHTML = ''; const grid = document.createElement('div'); grid.className = 'cat-grid'; grid.id = 'main-cat-grid'; if (isCatSortMode) { grid.classList.add('sort-mode'); } db.categories.forEach(cat => { const probCount = db.problems.filter(p => p.catId === cat.id).length; const card = document.createElement('div'); card.className = 'cat-card'; card.setAttribute('draggable', isCatSortMode); card.dataset.id = cat.id; card.innerHTML = `<div class="cat-title">${cat.name}</div><div class="cat-count">${probCount} 題</div><div class="cat-actions"><button class="btn btn-outline btn-sm" onclick="editCategory(event, '${cat.id}')">✏️</button><button class="btn btn-outline btn-sm" onclick="deleteCategory(event, '${cat.id}')" style="color:#f44747; border-color:#f44747;">🗑️</button></div>`; card.onclick = (e) => { if(!isCatSortMode && !e.target.closest('button')) openCategory(cat.id); }; grid.appendChild(card); }); container.appendChild(grid); if (isCatSortMode) { enableDragSort(grid.id, 'cat-card', saveCategoryOrder); } }
+    function saveCategoryOrder() { const cards = document.querySelectorAll('.cat-card'); const newOrder = []; cards.forEach(card => { const cat = db.categories.find(c => c.id === card.dataset.id); if(cat) newOrder.push(cat); }); db.categories = newOrder; saveToLocal(); }
+    function createCategory() { if(isCatSortMode) return; const name = prompt("新分類名稱："); if(!name) return; db.categories.push({ id: Date.now().toString(), name: name }); saveToLocal(); renderCategoryList(); }
+    function editCategory(e, id) { e.stopPropagation(); const cat = db.categories.find(c => c.id === id); const newName = prompt("修改分類名稱：", cat.name); if(newName) { cat.name = newName; saveToLocal(); renderCategoryList(); } }
+    function deleteCategory(e, id) { e.stopPropagation(); if(!confirm("確定刪除？")) return; db.categories = db.categories.filter(c => c.id !== id); db.problems = db.problems.filter(p => p.catId !== id); saveToLocal(); renderCategoryList(); }
+    function toggleProbSortMode() { isProbSortMode = !isProbSortMode; updateSortUI(); renderProblemList(); }
+    function renderProblemList() { const cat = db.categories.find(c => c.id === currentCatId); document.getElementById('currentCatTitle').innerText = cat ? cat.name : "分類題庫"; const container = document.getElementById('probListContainer'); if (isProbSortMode) { container.classList.add('sort-mode'); } else { container.classList.remove('sort-mode'); const newCont = container.cloneNode(false); container.parentNode.replaceChild(newCont, container); } const currentContainer = document.getElementById('probListContainer'); if (isProbSortMode) { enableDragSort('probListContainer', 'prob-item', saveProblemOrder); } currentContainer.innerHTML = ''; const catProblems = db.problems.filter(p => p.catId === currentCatId); const emptyMsg = document.getElementById('emptyMsg'); if (catProblems.length === 0) { emptyMsg.style.display = 'block'; } else { emptyMsg.style.display = 'none'; catProblems.forEach(p => { const item = document.createElement('div'); item.className = 'prob-item'; item.setAttribute('draggable', isProbSortMode); item.dataset.id = p.id; item.onclick = (e) => { if(!isProbSortMode && !e.target.closest('button')) window.open(`${window.location.href.split('?')[0]}?probId=${p.id}`, '_blank'); }; item.innerHTML = `<div style="flex:1; overflow:hidden;"><div class="prob-title">${p.title}</div><div class="prob-desc-preview">${p.desc.substring(0, 50)}...</div></div><div class="prob-actions"><button class="prob-btn-icon prob-edit-btn" onclick="editProblemInList(event, '${p.id}')">✏️</button><button class="prob-btn-icon prob-del-btn" onclick="deleteProblemInList(event, '${p.id}')">🗑️</button></div>`; currentContainer.appendChild(item); }); } }
+    function saveProblemOrder() { const items = document.querySelectorAll('#probListContainer .prob-item'); const newCatProbs = []; items.forEach(item => { const p = db.problems.find(x => x.id === item.dataset.id); if(p) newCatProbs.push(p); }); const otherProbs = db.problems.filter(p => p.catId !== currentCatId); db.problems = otherProbs.concat(newCatProbs); saveToLocal(); }
+    function createProblemInCat() { if(isProbSortMode) return; const title = prompt("題目名稱："); if(title) { db.problems.push({ id: Date.now().toString(), catId: currentCatId, title: title, desc: "請輸入題目描述...", tpl_cpp: defaultTemplates.cpp, tpl_cpp_h: defaultTemplates.cpp_h, tpl_cpp_cpp: defaultTemplates.cpp_cpp, tpl_python: defaultTemplates.python, code_cpp: defaultTemplates.cpp, code_cpp_h: defaultTemplates.cpp_h, code_cpp_cpp: defaultTemplates.cpp_cpp, code_python: defaultTemplates.python, testCases: [{ input: "1 2", output: "3" }], lastLang: 'cpp' }); saveToLocal(); renderProblemList(); } }
     function editProblemInList(e, id) { e.stopPropagation(); currentProbId = id; goToAdmin(); }
     function deleteProblemInList(e, id) { e.stopPropagation(); if(confirm("確定刪除？")) { db.problems = db.problems.filter(p => p.id !== id); saveToLocal(); renderProblemList(); } }
-    function updateSortUI() {
-        const catBtn = document.getElementById('catSortBtn'); const probBtn = document.getElementById('probSortBtn');
-        if(catBtn) { catBtn.innerText = isCatSortMode ? "✅ 完成排序" : "⇅ 調整順序"; catBtn.className = isCatSortMode ? "btn btn-danger" : "btn btn-outline"; }
-        if(probBtn) { probBtn.innerText = isProbSortMode ? "✅ 完成排序" : "⇅ 調整順序"; probBtn.className = isProbSortMode ? "btn btn-danger" : "btn btn-outline"; }
-    }
-    
-    function changeWorkspaceLang() { 
-        const p = db.problems.find(x => x.id === currentProbId); 
-        const oldLang = p.lastLang || 'cpp';
-        p['code_' + oldLang] = editor.getValue(); 
-        
-        const newLang = document.getElementById('langSelect').value; 
-        p.lastLang = newLang; 
-        
-        if (newLang === 'cpp') { editor.session.setMode("ace/mode/c_cpp"); editor.setValue(p.code_cpp, -1); } 
-        else if (newLang === 'python') { editor.session.setMode("ace/mode/python"); editor.setValue(p.code_python, -1); }
-    }
+    function updateSortUI() { const catBtn = document.getElementById('catSortBtn'); const probBtn = document.getElementById('probSortBtn'); if(catBtn) { catBtn.innerText = isCatSortMode ? "✅ 完成排序" : "⇅ 調整順序"; catBtn.className = isCatSortMode ? "btn btn-danger" : "btn btn-outline"; } if(probBtn) { probBtn.innerText = isProbSortMode ? "✅ 完成排序" : "⇅ 調整順序"; probBtn.className = isProbSortMode ? "btn btn-danger" : "btn btn-outline"; } }
 
-    function toggleCompileMode() {
-        isLocalMode = !isLocalMode; const btn = document.getElementById('modeBtn');
-        if (isLocalMode) { btn.innerHTML = "🔌 本機編譯 (Local:3000)"; btn.style.color = "var(--success)"; btn.style.borderColor = "var(--success)"; } 
-        else { btn.innerHTML = "☁️ 雲端編譯 (Wandbox)"; btn.style.color = "var(--accent)"; btn.style.borderColor = "var(--accent)"; }
-    }
-
-    function parseContent(text) {
-        if (!text) return ""; let escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-        const imageRegex = /!\[(.*?)\]\((.*?)\)/g; let html = escaped.replace(imageRegex, (match, alt, url) => { return `<img src="${url}" alt="${alt}">`; }); return html.replace(/\n/g, "<br>");
-    }
+    function toggleCompileMode() { isLocalMode = !isLocalMode; const btn = document.getElementById('modeBtn'); if (isLocalMode) { btn.innerHTML = "🔌 本機編譯 (Local:3000)"; btn.style.color = "var(--success)"; btn.style.borderColor = "var(--success)"; } else { btn.innerHTML = "☁️ 雲端編譯 (Wandbox)"; btn.style.color = "var(--accent)"; btn.style.borderColor = "var(--accent)"; } }
+    function parseContent(text) { if (!text) return ""; let escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); const imageRegex = /!\[(.*?)\]\((.*?)\)/g; let html = escaped.replace(imageRegex, (match, alt, url) => { return `<img src="${url}" alt="${alt}">`; }); return html.replace(/\n/g, "<br>"); }
 
     function resetCode() { 
         if(!confirm("重置程式碼到初始模板？")) return; 
         const p = db.problems.find(x => x.id === currentProbId); const lang = document.getElementById('langSelect').value;
-        if (lang === 'cpp') { p.code_cpp = p.tpl_cpp || defaultTemplates.cpp; editor.setValue(p.code_cpp, -1); } 
+        if (lang === 'cpp') { 
+            if (p.isMultiFile) {
+                p.code_cpp = p.tpl_cpp || defaultTemplates.cpp; p.code_cpp_h = p.tpl_cpp_h || defaultTemplates.cpp_h; p.code_cpp_cpp = p.tpl_cpp_cpp || defaultTemplates.cpp_cpp;
+                if (currentWsTab === 'main') editor.setValue(p.code_cpp, -1); else if (currentWsTab === 'h') editor.setValue(p.code_cpp_h, -1); else if (currentWsTab === 'cpp') editor.setValue(p.code_cpp_cpp, -1);
+            } else {
+                p.code_cpp = p.tpl_cpp || defaultTemplates.cpp; editor.setValue(p.code_cpp, -1); 
+            }
+        } 
         else { p.code_python = p.tpl_python || defaultTemplates.python; editor.setValue(p.code_python, -1); }
     }
     
     function adjustFontSize(change) { currentFontSize += change; if (currentFontSize < 10) currentFontSize = 10; if (currentFontSize > 30) currentFontSize = 30; editor.setFontSize(currentFontSize); }
-    function copyCode() {
-        const code = editor.getValue(); if(!code) { alert("沒有程式碼可以複製！"); return; }
-        navigator.clipboard.writeText(code).then(() => { alert("✅ 程式碼已複製到剪貼簿！"); }).catch(() => { const ta = document.createElement("textarea"); ta.value = code; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); alert("✅ 程式碼已複製到剪貼簿！"); });
-    }
-    
-    function changeAdminLang() {
-        const newLang = document.getElementById('adminLangSelect').value; const currentText = document.getElementById('editTemplate').value;
-        adminTempTemplates[currentAdminLang] = currentText; currentAdminLang = newLang; document.getElementById('editTemplate').value = adminTempTemplates[newLang];
-    }
-
-    // 效能優化 2：移除 async/await，將雲端儲存切換為背景任務，讓畫面立即切換。
-    function saveAdminAndBack() { 
-        const p = db.problems.find(x => x.id === currentProbId); 
-        p.title = document.getElementById('editTitle').value; p.desc = document.getElementById('editDesc').value; 
-        adminTempTemplates[currentAdminLang] = document.getElementById('editTemplate').value;
-        p.tpl_cpp = adminTempTemplates.cpp; p.tpl_python = adminTempTemplates.python;
-        const inputs = document.querySelectorAll('.tc-input'); const outputs = document.querySelectorAll('.tc-output'); 
-        p.testCases = []; for(let i=0; i<inputs.length; i++) p.testCases.push({ input: inputs[i].value, output: outputs[i].value }); 
-        
-        saveToLocal(); // 背景執行，不再卡住畫面
-        history.back(); // 直接退回工作區
-    }
-    
+    function copyCode() { const code = editor.getValue(); if(!code) return; navigator.clipboard.writeText(code).then(() => alert("✅ 已複製！")).catch(() => { const ta = document.createElement("textarea"); ta.value = code; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); alert("✅ 已複製！"); }); }
     function insertImageToDesc() { const url = prompt("請輸入圖片網址 (URL)：", "https://"); if (url) { const descArea = document.getElementById('editDesc'); descArea.value += `\n\n![圖片](${url})\n\n`; descArea.focus(); } }
     function insertImageURL() { insertImageToDesc(); } 
-    
-    function handleLocalImageUpload() {
-        const fileInput = document.getElementById('localImgInput'); const file = fileInput.files[0]; if (!file) return;
-        if (file.size > 2 * 1024 * 1024) { alert("⚠️ 圖片過大！建議使用 2MB 以下的圖片，以免瀏覽器卡頓。"); }
-        const reader = new FileReader();
-        reader.onload = function(e) { const descArea = document.getElementById('editDesc'); descArea.value += `\n\n![本地圖片](${e.target.result})\n\n`; descArea.focus(); fileInput.value = ''; };
-        reader.readAsDataURL(file);
-    }
-
+    function handleLocalImageUpload() { const fileInput = document.getElementById('localImgInput'); const file = fileInput.files[0]; if (!file) return; if (file.size > 2 * 1024 * 1024) { alert("⚠️ 圖片過大！建議使用 2MB 以下的圖片"); } const reader = new FileReader(); reader.onload = function(e) { const descArea = document.getElementById('editDesc'); descArea.value += `\n\n![本地圖片](${e.target.result})\n\n`; descArea.focus(); fileInput.value = ''; }; reader.readAsDataURL(file); }
     function openModelAnswerUI() { const p = db.problems.find(x => x.id === currentProbId); document.getElementById('modelAnswerInput').value = p.modelAnswer || ""; document.getElementById('modelAnswerModal').style.display = 'flex'; }
     function saveModelAnswerFromModal() { const p = db.problems.find(x => x.id === currentProbId); p.modelAnswer = document.getElementById('modelAnswerInput').value; document.getElementById('modelAnswerModal').style.display = 'none'; saveToLocal(); }
-    function copyModelAnswer() { const text = document.getElementById('modelAnswerInput'); if (!text.value.trim()) { alert("沒有示範解答可以複製！"); return; } text.select(); document.execCommand('copy'); alert("✅ 示範解答已複製！"); }
-    async function pasteModelAnswer() { try { const text = await navigator.clipboard.readText(); document.getElementById('modelAnswerInput').value = text; alert("✅ 已貼上解答！"); } catch (err) { alert("⚠️ 瀏覽器阻擋或無法讀取剪貼簿，請直接在文字框中按 Ctrl+V 貼上。"); } }
+    function copyModelAnswer() { const text = document.getElementById('modelAnswerInput'); if (!text.value.trim()) return; text.select(); document.execCommand('copy'); alert("✅ 已複製！"); }
+    async function pasteModelAnswer() { try { const text = await navigator.clipboard.readText(); document.getElementById('modelAnswerInput').value = text; alert("✅ 已貼上！"); } catch (err) { alert("⚠️ 瀏覽器阻擋，請手動貼上。"); } }
 
     async function runCode() {
         const p = db.problems.find(x => x.id === currentProbId); 
         if(!p.testCases || p.testCases.length === 0) { alert("無測資"); return; }
         
+        const lang = document.getElementById('langSelect').value; 
+        if (lang === 'cpp' && p.isMultiFile) {
+            if (currentWsTab === 'main') p.code_cpp = editor.getValue();
+            else if (currentWsTab === 'h') p.code_cpp_h = editor.getValue();
+            else if (currentWsTab === 'cpp') p.code_cpp_cpp = editor.getValue();
+        } else {
+            p['code_' + lang] = editor.getValue();
+        }
+
         const btn = document.getElementById('runBtn'); const logs = document.getElementById('outputLogs'); 
-        const code = editor.getValue(); const lang = document.getElementById('langSelect').value; 
         btn.disabled = true; btn.innerText = "..."; logs.innerHTML = '';
-        
         let passCount = 0; let isCompileError = false;
 
         for(let i=0; i<p.testCases.length; i++) {
             const tempDiv = document.createElement('div'); tempDiv.className = 'log-case'; tempDiv.innerHTML = `<span style="color:yellow">Case ${i+1}: Running...</span>`; logs.appendChild(tempDiv); tempDiv.scrollIntoView({ behavior: "smooth", block: "end" });
-
             try {
                 let act = ""; let exp = (p.testCases[i].output || "").trim(); let inputData = p.testCases[i].input || "";
 
+                let bodyPayload = {};
                 if (!isLocalMode) {
                     const apiCompiler = lang === 'cpp' ? 'gcc-head' : 'cpython-head';
-                    const res = await fetch('https://wandbox.org/api/compile.json', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ compiler: apiCompiler, code: code, stdin: inputData }) }).then(r => r.json());
-                    if (res.compiler_error || res.compiler_message) {
-                        tempDiv.innerHTML = `<div class="log-header" style="color:var(--fail)">❌ Case ${i+1}: 編譯錯誤 (Compile Error)</div><div class="log-details"><pre style="color:#f44747; margin:0;">${res.compiler_error || res.compiler_message}</pre></div>`;
-                        const stopDiv = document.createElement('div'); stopDiv.style.textAlign = "center"; stopDiv.style.padding = "10px"; stopDiv.style.color = "#aaa"; stopDiv.innerHTML = "⚠️ 因編譯失敗，已終止後續測試。"; logs.appendChild(stopDiv);
-                        isCompileError = true; break; 
-                    }
-                    if (res.status !== "0" && res.program_error) {
-                          tempDiv.innerHTML = `<div class="log-header" style="color:var(--fail)">❌ Case ${i+1}: 執行錯誤 (Runtime Error)</div><div class="log-details"><pre style="color:#f44747; margin:0;">${res.program_error}</pre></div>`;
-                          continue; 
-                    }
+                    bodyPayload = { compiler: apiCompiler, stdin: inputData };
+                    if (lang === 'cpp' && p.isMultiFile) {
+                        bodyPayload.code = p.code_cpp;
+                        bodyPayload.codes = [
+                            { file: (p.className || 'MyClass') + '.h', content: p.code_cpp_h || '' },
+                            { file: (p.className || 'MyClass') + '.cpp', content: p.code_cpp_cpp || '' }
+                        ];
+                    } else { bodyPayload.code = lang === 'cpp' ? p.code_cpp : p.code_python; }
+
+                    const res = await fetch('https://wandbox.org/api/compile.json', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(bodyPayload) }).then(r => r.json());
+                    if (res.compiler_error || res.compiler_message) { tempDiv.innerHTML = `<div class="log-header" style="color:var(--fail)">❌ Case ${i+1}: 編譯錯誤</div><div class="log-details"><pre style="color:#f44747; margin:0;">${res.compiler_error || res.compiler_message}</pre></div>`; const stopDiv = document.createElement('div'); stopDiv.style.textAlign = "center"; stopDiv.style.padding = "10px"; stopDiv.style.color = "#aaa"; stopDiv.innerHTML = "⚠️ 因編譯失敗，已終止後續測試。"; logs.appendChild(stopDiv); isCompileError = true; break; }
+                    if (res.status !== "0" && res.program_error) { tempDiv.innerHTML = `<div class="log-header" style="color:var(--fail)">❌ Case ${i+1}: 執行錯誤</div><div class="log-details"><pre style="color:#f44747; margin:0;">${res.program_error}</pre></div>`; continue; }
                     act = (res.program_message || "").trim();
                 } else {
-                    try {
-                        const res = await fetch('http://127.0.0.1:3000/run', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ lang: lang, code: code, stdin: inputData }) }).then(r => r.json());
-                        if (res.error) {
-                            tempDiv.innerHTML = `<div class="log-header" style="color:var(--fail)">❌ Case ${i+1}: ${res.type || "Error"}</div><div class="log-details"><pre style="color:#f44747; margin:0;">${res.message || "Unknown Error"}</pre></div>`;
-                            if (res.type === '編譯錯誤') {
-                                const stopDiv = document.createElement('div'); stopDiv.style.textAlign = "center"; stopDiv.style.padding = "10px"; stopDiv.style.color = "#aaa"; stopDiv.innerHTML = "⚠️ 因編譯失敗，已終止後續測試。"; logs.appendChild(stopDiv);
-                                isCompileError = true; break;
-                            }
-                            continue;
-                        }
-                        act = (res.output || "").trim();
-                    } catch (err) {
-                        tempDiv.innerHTML = `<div class="log-header" style="color:var(--fail)">❌ Case ${i+1}: 無法連線至本機伺服器</div><div class="log-details" style="color:#aaa; font-size:0.85rem;">請確認 Python Flask 伺服器 (server.py) 是否已啟動於 port 3000。</div>`;
-                        isCompileError = true; break;
-                    }
+                    bodyPayload = { lang: lang, stdin: inputData };
+                    if (lang === 'cpp' && p.isMultiFile) {
+                        bodyPayload.code = p.code_cpp;
+                        bodyPayload.codes = [
+                            { file: (p.className || 'MyClass') + '.h', content: p.code_cpp_h || '' },
+                            { file: (p.className || 'MyClass') + '.cpp', content: p.code_cpp_cpp || '' }
+                        ];
+                    } else { bodyPayload.code = lang === 'cpp' ? p.code_cpp : p.code_python; }
+
+                    const res = await fetch('http://127.0.0.1:3000/run', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(bodyPayload) }).then(r => r.json());
+                    if (res.error) { tempDiv.innerHTML = `<div class="log-header" style="color:var(--fail)">❌ Case ${i+1}: ${res.type || "Error"}</div><div class="log-details"><pre style="color:#f44747; margin:0;">${res.message || "Unknown Error"}</pre></div>`; if (res.type === '編譯錯誤') { isCompileError = true; break; } continue; }
+                    act = (res.output || "").trim();
                 }
 
-                let pass = act.replace(/\r\n/g, "\n") === exp.replace(/\r\n/g, "\n");
-                if (pass) passCount++;
+                let pass = act.replace(/\r\n/g, "\n") === exp.replace(/\r\n/g, "\n"); if (pass) passCount++;
                 let statusHtml = pass ? `<span style="color:var(--success)">✅ Case ${i+1}: 通過測試 (Accepted)</span>` : `<span style="color:var(--fail)">❌ Case ${i+1}: 答案錯誤 (Wrong Answer)</span>`;
                 let actStyle = pass ? "color:#fff; border-left-color:var(--success);" : "color:var(--warning); border-left-color:var(--fail);";
                 tempDiv.innerHTML = `<div class="log-header">${statusHtml}</div><div class="log-details"><div class="log-label">輸入 (Input):</div><div class="log-value">${inputData}</div><div class="log-label">預期輸出 (Expected):</div><div class="log-value">${exp}</div><div class="log-label">您的輸出 (Actual):</div><div class="log-value" style="${actStyle}">${act || "(無輸出)"}</div></div>`;
 
-            } catch(e) { 
-                tempDiv.innerHTML = `<div style="color:var(--fail)">❌ Case ${i+1}: 網路連線錯誤</div><div class="log-details" style="color:#aaa; font-size:0.85rem;">無法連線至編譯伺服器，請檢查網路狀態。</div>`; 
-                isCompileError = true; break;
-            }
+            } catch(e) { tempDiv.innerHTML = `<div style="color:var(--fail)">❌ Case ${i+1}: 網路連線錯誤</div><div class="log-details" style="color:#aaa; font-size:0.85rem;">無法連線至伺服器。</div>`; isCompileError = true; break; }
         }
 
         let finalStatus = "";
@@ -1239,93 +1065,44 @@
         else if (passCount === p.testCases.length) { finalStatus = `<span style="color:var(--success)">✅ 全數通過 (${passCount}/${p.testCases.length})</span>`; } 
         else { finalStatus = `<span style="color:var(--warning)">⚠️ 部分通過 (${passCount}/${p.testCases.length})</span>`; }
 
+        let histCode = lang === 'cpp' ? p.code_cpp : p.code_python;
+        if (lang === 'cpp' && p.isMultiFile) histCode = `// main.cpp\n${p.code_cpp}\n\n// ${(p.className||'MyClass')}.h\n${p.code_cpp_h}\n\n// ${(p.className||'MyClass')}.cpp\n${p.code_cpp_cpp}`;
+
         if (!executionHistories[currentProbId]) executionHistories[currentProbId] = [];
-        executionHistories[currentProbId].unshift({ time: new Date().toLocaleString('zh-TW', { hour12: false }), lang: lang, code: code, status: finalStatus });
+        executionHistories[currentProbId].unshift({ time: new Date().toLocaleString('zh-TW', { hour12: false }), lang: lang, code: histCode, status: finalStatus });
         if (executionHistories[currentProbId].length > 30) executionHistories[currentProbId].pop();
-        
-        await saveToLocal(); 
-        
-        btn.disabled = false; btn.innerText = "▶️ 執行測試";
+        await saveToLocal(); btn.disabled = false; btn.innerText = "▶️ 執行測試";
     }
 
     function openHistoryModal() {
-        const histList = executionHistories[currentProbId] || [];
-        const listDiv = document.getElementById('historyList'); 
-        document.getElementById('historyCodeView').value = ""; 
-        listDiv.innerHTML = "";
-        
-        if (histList.length === 0) {
-            listDiv.innerHTML = "<div style='color:#666; text-align:center; padding:30px; font-size:1.1rem;'>尚無執行紀錄</div>";
-        } else {
-            histList.forEach((hist, idx) => {
-                const item = document.createElement('div'); item.className = 'hist-item';
-                item.onclick = () => { document.querySelectorAll('.hist-item').forEach(el => el.classList.remove('active')); item.classList.add('active'); document.getElementById('historyCodeView').value = hist.code; };
-                item.innerHTML = `<div style="font-size:0.85rem; color:#aaa;">${hist.time} <span style="color:var(--accent)">[${hist.lang}]</span></div><div style="margin-top:5px; font-weight:bold;">${hist.status}</div>`;
-                listDiv.appendChild(item);
-                if (idx === 0) item.click();
-            });
-        }
+        const histList = executionHistories[currentProbId] || []; const listDiv = document.getElementById('historyList'); document.getElementById('historyCodeView').value = ""; listDiv.innerHTML = "";
+        if (histList.length === 0) { listDiv.innerHTML = "<div style='color:#666; text-align:center; padding:30px; font-size:1.1rem;'>尚無執行紀錄</div>"; } else { histList.forEach((hist, idx) => { const item = document.createElement('div'); item.className = 'hist-item'; item.onclick = () => { document.querySelectorAll('.hist-item').forEach(el => el.classList.remove('active')); item.classList.add('active'); document.getElementById('historyCodeView').value = hist.code; }; item.innerHTML = `<div style="font-size:0.85rem; color:#aaa;">${hist.time} <span style="color:var(--accent)">[${hist.lang}]</span></div><div style="margin-top:5px; font-weight:bold;">${hist.status}</div>`; listDiv.appendChild(item); if (idx === 0) item.click(); }); }
         document.getElementById('historyModal').style.display = 'flex';
     }
 
-    function clearProblemHistory() {
-        if (!confirm("確定要清空這題的所有歷史執行紀錄嗎？此動作無法復原。")) return;
-        
-        // 使用 delete 完全移除該題目的鍵值，而不只是變成空陣列
-        delete executionHistories[currentProbId]; 
-        
-        // 執行存檔，並在存檔完成後重新渲染畫面
-        saveToLocal().then(() => openHistoryModal());
-    }
+    function clearProblemHistory() { if (!confirm("確定要清空這題的紀錄嗎？")) return; delete executionHistories[currentProbId]; saveToLocal().then(() => openHistoryModal()); }
 
     function openAIHelperModal() {
-        const p = db.problems.find(x => x.id === currentProbId); const code = editor.getValue();
-        if (!code || code.trim() === "") { alert("程式碼為空，無法分析。"); return; }
-        document.getElementById('aiPromptOutput').value = `請擔任程式設計助教，幫我檢查以下程式碼的邏輯是否正確，並給予修正建議（請用繁體中文回答）：\n\n【題目名稱】：${p.title}\n【題目描述】：\n${p.desc}\n\n【我的程式碼】：\n\`\`\`${document.getElementById('langSelect').value}\n${code}\n\`\`\``;
+        const p = db.problems.find(x => x.id === currentProbId); const lang = document.getElementById('langSelect').value;
+        if (lang === 'cpp' && p.isMultiFile) { if (currentWsTab === 'main') p.code_cpp = editor.getValue(); else if (currentWsTab === 'h') p.code_cpp_h = editor.getValue(); else if (currentWsTab === 'cpp') p.code_cpp_cpp = editor.getValue(); } else { p['code_' + lang] = editor.getValue(); }
+        
+        let fullCode = p['code_' + lang];
+        if (lang === 'cpp' && p.isMultiFile) { fullCode = `// main.cpp\n${p.code_cpp}\n\n// ${(p.className||'MyClass')}.h\n${p.code_cpp_h}\n\n// ${(p.className||'MyClass')}.cpp\n${p.code_cpp_cpp}`; }
+        
+        if (!fullCode || fullCode.trim() === "") { alert("程式碼為空，無法分析。"); return; }
+        document.getElementById('aiPromptOutput').value = `請擔任程式設計助教，幫我檢查以下程式碼的邏輯是否正確，並給予修正建議（請用繁體中文回答）：\n\n【題目名稱】：${p.title}\n【題目描述】：\n${p.desc}\n\n【我的程式碼】：\n\`\`\`${lang}\n${fullCode}\n\`\`\``;
         document.getElementById('aiHelperModal').style.display = 'flex';
     }
     function copyPromptOnly() { const text = document.getElementById('aiPromptOutput'); text.select(); document.execCommand('copy'); alert("✅ 內容已複製！"); document.getElementById('aiHelperModal').style.display = 'none'; }
-    function copyPromptAndOpenGemini() { const text = document.getElementById('aiPromptOutput'); text.select(); document.execCommand('copy'); alert("📋 內容已複製！\n即將為您打開 Gemini。"); window.open('https://gemini.google.com/app', '_blank'); document.getElementById('aiHelperModal').style.display = 'none'; }
+    function copyPromptAndOpenGemini() { const text = document.getElementById('aiPromptOutput'); text.select(); document.execCommand('copy'); alert("📋 已複製！即將打開 Gemini。"); window.open('https://gemini.google.com/app', '_blank'); document.getElementById('aiHelperModal').style.display = 'none'; }
 
-    function addTestCaseUI(input='', output='') {
-        const div = document.createElement('div'); div.className = 'tc-item';
-        div.innerHTML = `<button class="btn btn-outline" style="float:right; border:none; padding:0 5px;" onclick="this.parentElement.remove()">✕</button><div style="display:flex; gap:10px; margin-top:5px;"><textarea class="tc-input" rows="1" oninput="autoResize(this)" style="flex:1" placeholder="Input">${input}</textarea><textarea class="tc-output" rows="1" oninput="autoResize(this)" style="flex:1" placeholder="Output">${output}</textarea></div>`;
-        document.getElementById('adminTestCases').appendChild(div);
-        if(input || output) { const tas = div.querySelectorAll('textarea'); tas.forEach(ta => autoResize(ta)); }
-    }
+    function addTestCaseUI(input='', output='') { const div = document.createElement('div'); div.className = 'tc-item'; div.innerHTML = `<button class="btn btn-outline" style="float:right; border:none; padding:0 5px;" onclick="this.parentElement.remove()">✕</button><div style="display:flex; gap:10px; margin-top:5px;"><textarea class="tc-input" rows="1" oninput="autoResize(this)" style="flex:1" placeholder="Input">${input}</textarea><textarea class="tc-output" rows="1" oninput="autoResize(this)" style="flex:1" placeholder="Output">${output}</textarea></div>`; document.getElementById('adminTestCases').appendChild(div); if(input || output) { const tas = div.querySelectorAll('textarea'); tas.forEach(ta => autoResize(ta)); } }
     
-    function downloadBackup() {
-        const date = new Date().toISOString().slice(0, 10); let filename = prompt("請輸入檔案名稱 (無需副檔名):", `oj_backup_${date}`);
-        if (!filename) return; if (!filename.endsWith(".txt") && !filename.endsWith(".json")) { filename += ".txt"; }
-        const backupData = btoa(encodeURIComponent(JSON.stringify(db))); const blob = new Blob([backupData], { type: 'text/plain' });
-        const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename;
-        document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a);
-    }
-
-    function handleBackupFile(input) {
-        const file = input.files[0]; if (!file) return; pendingRestoreFileName = file.name; 
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            let content = e.target.result.trim();
-            if (content.startsWith("{") || content.startsWith("[")) { try { JSON.parse(content); content = btoa(encodeURIComponent(content)); } catch(err) { alert("檔案格式錯誤"); return; } }
-            document.getElementById('backupStr').value = content;
-        };
-        reader.readAsText(file); input.value = ''; 
-    }
-
+    function downloadBackup() { const date = new Date().toISOString().slice(0, 10); let filename = prompt("請輸入檔案名稱:", `oj_backup_${date}`); if (!filename) return; if (!filename.endsWith(".txt") && !filename.endsWith(".json")) { filename += ".txt"; } const backupData = btoa(encodeURIComponent(JSON.stringify(db))); const blob = new Blob([backupData], { type: 'text/plain' }); const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a); }
+    function handleBackupFile(input) { const file = input.files[0]; if (!file) return; pendingRestoreFileName = file.name; const reader = new FileReader(); reader.onload = function(e) { let content = e.target.result.trim(); if (content.startsWith("{") || content.startsWith("[")) { try { JSON.parse(content); content = btoa(encodeURIComponent(content)); } catch(err) { alert("格式錯誤"); return; } } document.getElementById('backupStr').value = content; }; reader.readAsText(file); input.value = ''; }
     function openBackupUI() { pendingRestoreFileName = ""; document.getElementById('backupStr').value = btoa(encodeURIComponent(JSON.stringify(db))); document.getElementById('backupModal').style.display = 'flex'; }
     function copyBackupCode() { document.getElementById('backupStr').select(); document.execCommand('copy'); alert("已複製"); }
-    function execRestore() {
-        if(!confirm("這將覆蓋現有所有資料，確定？")) return;
-        try {
-            const data = JSON.parse(decodeURIComponent(atob(document.getElementById('backupStr').value)));
-            if(data.categories && data.problems) { 
-                let defaultName = pendingRestoreFileName || "自訂還原題庫"; let finalName = prompt("請為這個還原的題庫命名：", defaultName);
-                if (finalName === null) return; if (finalName.trim() === "") finalName = "自訂還原題庫";
-                db = data; localStorage.setItem('oj_v15_bank_name', finalName); saveToLocal(); window.location.href = window.location.pathname; 
-            } else { throw new Error(); }
-        } catch(e) { alert("代碼無效或格式錯誤"); }
-    }
+    function execRestore() { if(!confirm("覆蓋現有資料，確定？")) return; try { const data = JSON.parse(decodeURIComponent(atob(document.getElementById('backupStr').value))); if(data.categories && data.problems) { let defaultName = pendingRestoreFileName || "自訂還原題庫"; let finalName = prompt("請命名：", defaultName); if (finalName === null) return; if (finalName.trim() === "") finalName = "自訂還原題庫"; db = data; localStorage.setItem('oj_v15_bank_name', finalName); saveToLocal(); window.location.href = window.location.pathname; } else { throw new Error(); } } catch(e) { alert("無效"); } }
 </script>
 </body>
 </html>
