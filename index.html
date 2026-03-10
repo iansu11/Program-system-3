@@ -768,7 +768,6 @@
         if (currentUser) {
             try {
                 await firestore.collection('users').doc(currentUser.uid).set({
-                    dbData: dataString,
                     historyData: historyString,
                     bankName: currentBankName,
                     bankUrl: currentBankUrl,
@@ -1329,3 +1328,4 @@
 </script>
 </body>
 </html>
+
