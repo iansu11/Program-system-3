@@ -1,9 +1,9 @@
 {
-    "version": "1.0",
+    "version": "1.1",
     "categories": [
         {
             "id": "1772710087888",
-            "name": "第九章練習-1"
+            "name": "第九章練習"
         }
     ],
     "problems": [
@@ -57,6 +57,24 @@
                 }
             ],
             "lastLang": "cpp"
+        },
+        {
+            "id": "1773143612238",
+            "catId": "1772710087888",
+            "title": "第一次小考-第二題",
+            "desc": "【問題描述】\n在台北市有一隻可憐小鯊鯊，腦袋不好，需要你幫他計算，每天吃的餐點總共多少錢，請你幫這隻鯊鯊撰寫一隻程式，一共有21組輸入，分別為一個禮拜的每一餐，每組輸入會有食物名稱、食物價格、食物數量，請你幫幫他計算每天花了多少錢以及一個禮拜總共花了多少錢。\n\n【輸入說明】\n輸入21組資料，每一組資料中有食物名稱、食物價格、食物數量，請在 setFood() 進行輸入的動作。\n\n【輸出說明】\n使用 printData() 印出物件中的資料、printDay() 印出當天三個物件的總金額，printWeek() 印出一週全部物件的總金額。\n\n【備註】\n\nprintData() 中印出的資料包含食物名稱、食物價格以及食物數量。\n\nprintDay() 中印出三餐的資料並以 \"--------\" 換行再輸出當日金額。\n\n範例輸入:\n三明治 35 1\n排骨便當 90 1\n牛肉麵 120 1\n蛋餅 30 2\n雞肉飯 50 1\n火鍋 250 1\n漢堡 45 1\n涼麵 45 1\n壽司 150 1\n御飯糰 30 1\n炒飯 80 1\n牛排 280 1\n鐵板吐司 55 1\n意麵 60 1\n麻辣燙 120 1\n燒餅 25 2\n炸醬麵 70 1\n燒臘便當 110 1\n水煎包 15 3\n水餃 6 10\n小籠包 120 1\n\n範例輸出:\n\n三明治 35 1\n排骨便當 90 1\n牛肉麵 120 1\n--------\n當日總花費: 245\n\n蛋餅 30 2\n雞肉飯 50 1\n火鍋 250 1\n--------\n當日總花費: 360\n\n漢堡 45 1\n涼麵 45 1\n壽司 150 1\n--------\n當日總花費: 240\n\n御飯糰 30 1\n炒飯 80 1\n牛排 280 1\n--------\n當日總花費: 390\n\n鐵板吐司 55 1\n意麵 60 1\n麻辣燙 120 1\n--------\n當日總花費: 235\n\n燒餅 25 2\n炸醬麵 70 1\n燒臘便當 110 1\n--------\n當日總花費: 230\n\n水煎包 15 3\n水餃 6 10\n小籠包 120 1\n--------\n當日總花費: 225\n\n一周的總花費: 1925",
+            "tpl_cpp": "#include <iostream>\n#include <string>\nusing namespace std;\nclass Food{\n    private:\n        string name;\n        int price;\n        int quantity;\n    public:\n        void setFood(){\n\n        }\n        void printData(){\n\n        }\n        double getTotal(){\n\n        }\n};\nvoid printDay(Food myFood_1, Food myFood_2, Food myFood_3){\n\n}\nvoid printWeek(Food myFood[], int size){\n\n}\nint main(){\n    Food myFood[21];\n    for(int i=0;i<21;i++)\n        myFood[i].setFood();\n        \n    // TODO: 呼叫 printWeek 處理後續輸出\n}",
+            "tpl_python": "import sys\n\n# Python Solution\ndef main():\n    # Read input from stdin\n    lines = sys.stdin.read().splitlines()\n    # Write logic here\n    pass\n\nif __name__ == \"__main__\":\n    main()",
+            "code_cpp": "#include <iostream>\n#include <string>\nusing namespace std;\nclass Food{\n    private:\n        string name;\n        int price;\n        int quantity;\n    public:\n        void setFood(){\n\n        }\n        void printData(){\n\n        }\n        double getTotal(){\n\n        }\n};\nvoid printDay(Food myFood_1, Food myFood_2, Food myFood_3){\n\n}\nvoid printWeek(Food myFood[], int size){\n\n}\nint main(){\n    Food myFood[21];\n    for(int i=0;i<21;i++)\n        myFood[i].setFood();\n        \n    // TODO: 呼叫 printWeek 處理後續輸出\n}",
+            "code_python": "import sys\n\n# Python Solution\ndef main():\n    # Read input from stdin\n    lines = sys.stdin.read().splitlines()\n    # Write logic here\n    pass\n\nif __name__ == \"__main__\":\n    main()",
+            "testCases": [
+                {
+                    "input": "三明治 35 1\n排骨便當 90 1\n牛肉麵 120 1\n蛋餅 30 2\n雞肉飯 50 1\n火鍋 250 1\n漢堡 45 1\n涼麵 45 1\n壽司 150 1\n御飯糰 30 1\n炒飯 80 1\n牛排 280 1\n鐵板吐司 55 1\n意麵 60 1\n麻辣燙 120 1\n燒餅 25 2\n炸醬麵 70 1\n燒臘便當 110 1\n水煎包 15 3\n水餃 6 10\n小籠包 120 1",
+                    "output": "三明治 35 1\n排骨便當 90 1\n牛肉麵 120 1\n--------\n當日總花費: 245\n\n蛋餅 30 2\n雞肉飯 50 1\n火鍋 250 1\n--------\n當日總花費: 360\n\n漢堡 45 1\n涼麵 45 1\n壽司 150 1\n--------\n當日總花費: 240\n\n御飯糰 30 1\n炒飯 80 1\n牛排 280 1\n--------\n當日總花費: 390\n\n鐵板吐司 55 1\n意麵 60 1\n麻辣燙 120 1\n--------\n當日總花費: 235\n\n燒餅 25 2\n炸醬麵 70 1\n燒臘便當 110 1\n--------\n當日總花費: 230\n\n水煎包 15 3\n水餃 6 10\n小籠包 120 1\n--------\n當日總花費: 225\n\n一周的總花費: 1925"
+                }
+            ],
+            "lastLang": "cpp",
+            "modelAnswer": "#include <iostream>\n#include <string>\nusing namespace std;\n\nclass Food{\n    private:\n        string name;\n        int price;\n        int quantity;\n    public:\n        // 在此進行輸入的動作\n        void setFood(){\n            cin >> name >> price >> quantity;\n        }\n        \n        // 印出物件中的資料\n        void printData(){\n            cout << name << \" \" << price << \" \" << quantity << endl;\n        }\n        \n        // 計算該物件的總金額\n        double getTotal(){\n            return price * quantity;\n        }\n};\n\n// 印出當天三餐資料，並以 \"--------\" 換行再輸出當日金額\nvoid printDay(Food myFood_1, Food myFood_2, Food myFood_3){\n    myFood_1.printData();\n    myFood_2.printData();\n    myFood_3.printData();\n    \n    double dayTotal = myFood_1.getTotal() + myFood_2.getTotal() + myFood_3.getTotal();\n    \n    cout << \"--------\" << endl;\n    cout << \"當日總花費: \" << dayTotal << endl;\n}\n\n// 統整一週輸出，並印出一週全部物件的總金額\nvoid printWeek(Food myFood[], int size){\n    double weekTotal = 0;\n    \n    // 一週有 7 天 (21 / 3 = 7)\n    for(int i = 0; i < size / 3; i++){\n        int idx = i * 3;\n        \n        // 呼叫 printDay 處理一天的資料\n        printDay(myFood[idx], myFood[idx+1], myFood[idx+2]);\n        \n        // 計算並累加這三餐的總金額到週總計\n        weekTotal += myFood[idx].getTotal() + myFood[idx+1].getTotal() + myFood[idx+2].getTotal();\n        \n        // 每天之間空一行，最後一天不空\n        if(i < (size / 3) - 1){\n            cout << endl;\n        }\n    }\n    \n    // 結尾印出一週總花費\n    cout << endl << \"一周的總花費: \" << weekTotal << endl;\n}\n\nint main(){\n    Food myFood[21];\n    \n    // 輸入 21 筆資料\n    for(int i=0;i<21;i++)\n        myFood[i].setFood();\n        \n    // 呼叫 printWeek 進行處理與輸出\n    printWeek(myFood, 21);\n    \n    return 0;\n}"
         }
     ]
 }
